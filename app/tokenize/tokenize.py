@@ -30,3 +30,6 @@ def tokenize(ns: Namespace) -> None:
         print(e)
     for t in tokens:
         print(t)
+        
+    if e:
+        exit(65)
