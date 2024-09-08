@@ -1,4 +1,5 @@
 from argparse import ArgumentParser, Namespace
+import sys
 
 from .errors import UnexpectedCharacterError
 from .symbols import Symbol, EOFSymbol
@@ -27,7 +28,7 @@ def tokenize(ns: Namespace) -> None:
     tokens.append(EOFSymbol())    
     
     for e in errors:
-        print(e)
+        print(e, file=sys.stderr)
     for t in tokens:
         print(t)
         
