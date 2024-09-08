@@ -1,7 +1,6 @@
 from argparse import ArgumentParser, Namespace
 from .tokenize import config_tokenize_parser
 
-
 def main():
     args = parse_args()
     args.entry(args)

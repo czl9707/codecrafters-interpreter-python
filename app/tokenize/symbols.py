@@ -19,7 +19,7 @@ class Symbol(ABC):
         return symbol in Symbol._chr2symbol
     
     @classmethod
-    def from_chr(cls, ch: str) -> "Symbol":
+    def from_string(cls, ch: str) -> "Symbol":
         return Symbol._chr2symbol[ch]()
     
     def __str__(self) -> str:
@@ -65,6 +65,14 @@ class MinusSymbol(Symbol):
 class SemicolonSymbol(Symbol):
     symbol= ";" 
     name="SEMICOLON"
+    
+class EqualSymbol(Symbol):
+    symbol= "=" 
+    name="EQUAL"
+    
+class EqualEqualSymbol(Symbol):
+    symbol= "==" 
+    name="EQUAL_EQUAL"
     
 class EOFSymbol(Symbol):
     symbol = ""
