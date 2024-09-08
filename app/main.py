@@ -1,5 +1,4 @@
 from argparse import ArgumentParser, Namespace
-import sys
 from .tokenize import config_tokenize_parser
 
 
