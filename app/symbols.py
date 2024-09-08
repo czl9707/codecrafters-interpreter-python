@@ -57,7 +57,16 @@ class CommaSymbol(Symbol):
 class PlusSymbol(Symbol):
     symbol= "+" 
     name="PLUS"
+
+class MinusSymbol(Symbol):
+    symbol= "-" 
+    name="MINUS"
+
+class SemicolonSymbol(Symbol):
+    symbol= ";" 
+    name="SEMICOLON"
     
 class EOFSymbol(Symbol):
     symbol = ""
     name = "EOF"
+    
