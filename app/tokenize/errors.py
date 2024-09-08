@@ -12,7 +12,7 @@ class BaseError(ABC, Generic[ValueT]):
         self.value = value
     
     def __str__(self) -> str:
-        return f"[line: {self.line_num}] " + self.msg_format.format(self.value)
+        return f"[line {self.line_num}] " + self.msg_format.format(self.value)
 
 
 class UnexpectedCharacterError(BaseError[str]):
