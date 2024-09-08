@@ -1,25 +1,20 @@
+from argparse import ArgumentParser, Namespace
 import sys
+from .tokenize import config_tokenize_parser
 
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: ./your_program.sh tokenize <filename>", file=sys.stderr)
-        exit(1)
+    args = parse_args()
+    args.entry(args)
 
-    command = sys.argv[1]
-    filename = sys.argv[2]
 
-    if command != "tokenize":
-        print(f"Unknown command: {command}", file=sys.stderr)
-        exit(1)
-
-    with open(filename) as file:
-        file_contents = file.read()
-
-    if file_contents:
-        raise NotImplementedError("Scanner not implemented")
-    else:
-        print("EOF  null")
+def parse_args() -> Namespace:
+    arg_parser = ArgumentParser()
+    sub_parser = arg_parser.add_subparsers()
+    
+    config_tokenize_parser(sub_parser.add_parser("tokenize"))
+    
+    return arg_parser.parse_args()
 
 
 if __name__ == "__main__":
