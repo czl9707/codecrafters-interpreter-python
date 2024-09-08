@@ -16,4 +16,4 @@ class BaseError(ABC, Generic[ValueT]):
 
 
 class UnexpectedCharacterError(BaseError[str]):
-    msg_format = "Unexpected character: {}"
+    msg_format = "Error: Unexpected character: {}"
