@@ -82,6 +82,23 @@ class BangEqualSymbol(Symbol):
     symbol = "!="
     name = "BANG_EQUAL"
     
+class LessSymbol:
+    symbol = "<"
+    name = "LESS"
+
+class LessEqualSymbol:
+    symbol = "<="
+    name = "LESS_EQUAL"
+
+class GreaterSymbol:
+    symbol = ">"
+    name = "GREATER"
+
+class GreaterEqualSymbol :
+    symbol = ">="
+    name = "GREATER_EQUAL"
+
+    
     
 class EOFSymbol(Symbol):
     symbol = ""
