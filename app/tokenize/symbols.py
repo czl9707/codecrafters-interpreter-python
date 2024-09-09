@@ -74,6 +74,15 @@ class EqualEqualSymbol(Symbol):
     symbol= "==" 
     name="EQUAL_EQUAL"
     
+class BangSymbol(Symbol):
+    symbol = "!"
+    name = "BANG"
+
+class BangEqualSymbol(Symbol):
+    symbol = "!="
+    name = "BANG_EQUAL"
+    
+    
 class EOFSymbol(Symbol):
     symbol = ""
     name = "EOF"
