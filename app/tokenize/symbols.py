@@ -1,6 +1,8 @@
 
 from abc import ABC
-from typing import Type
+from typing import Optional, Type
+
+from ..helper.bi_direction_iterator import BiDirectionIterator
 
 
 class Symbol(ABC):
@@ -19,8 +21,21 @@ class Symbol(ABC):
         return symbol in Symbol._chr2symbol
     
     @classmethod
-    def from_string(cls, ch: str) -> "Symbol":
-        return Symbol._chr2symbol[ch]()
+    def from_iter(cls, iter: BiDirectionIterator) -> Optional["Symbol"]:
+        sym = next(iter)
+        sym += next(iter)
+        if Symbol.is_symbol(sym):
+            pass
+        elif Symbol.is_symbol(sym[0]):
+            sym = sym[0]
+            iter.step_back()
+        else:
+            iter.step_back()
+            iter.step_back()
+            return None
+        
+        return Symbol._chr2symbol[sym]()
+        
     
     def __str__(self) -> str:
         return f"{self.name} {self.symbol} null"
@@ -98,7 +113,6 @@ class GreaterEqualSymbol(Symbol):
     symbol = ">="
     name = "GREATER_EQUAL"
 
-    
     
 class EOFSymbol(Symbol):
     symbol = ""
