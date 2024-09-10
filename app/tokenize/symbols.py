@@ -22,20 +22,18 @@ class Symbol(ABC):
     
     @classmethod
     def from_iter(cls, iter: BiDirectionIterator) -> Optional["Symbol"]:
-        sym = next(iter)
-        sym += next(iter)
-        if Symbol.is_symbol(sym):
-            pass
-        elif Symbol.is_symbol(sym[0]):
-            sym = sym[0]
+        sym = ""
+        while not iter.EOF and len(sym) < 2:
+            sym += next(iter)
+
+        while len(sym) > 1:
+            if Symbol.is_symbol(sym):
+                return Symbol._chr2symbol[sym]()
+            
             iter.step_back()
-        else:
-            iter.step_back()
-            iter.step_back()
-            return None
-        
-        return Symbol._chr2symbol[sym]()
-        
+            sym = sym[:-1]
+                
+        return None        
     
     def __str__(self) -> str:
         return f"{self.name} {self.symbol} null"

@@ -5,15 +5,19 @@ class Comments:
     @staticmethod
     def has_comments(iter: BiDirectionIterator) -> bool:
         sym = next(iter)
-        sym += next(iter)
+        if not iter.EOF: 
+            sym += next(iter)
+        
         if sym != "//":
-            iter.step_back()
-            iter.step_back()
+            for _ in sym:
+                iter.step_back()
             return False
         
-        for ch in iter:
-            if ch == "\n":
-                break
+        else:
+            for ch in iter:
+                if ch == "\n":
+                    break
+                
+            return True
         
-        return True
             
