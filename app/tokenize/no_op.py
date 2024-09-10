@@ -35,7 +35,7 @@ class WhiteSpace:
             return False
         
         s = next(iter)
-        if s == " " or s == "\t":
+        if s == " " or s == "\t" or s == "\n":
             return True
 
         iter.step_back()
