@@ -4,7 +4,7 @@ from typing import Iterator
 
 from ..helper.bi_direction_iterator import BiDirectionIterator
 
-from .comments import Comments
+from .no_op import Comments, WhiteSpace
 from .errors import UnexpectedCharacterError
 from .symbols import Symbol, EOFSymbol
 
@@ -32,8 +32,11 @@ class Tokenizer:
     
     def __iter__(self) -> Iterator[Symbol]:
         while not self.iter.EOF:
-            if Comments.has_comments(self.iter):
+            if Comments.consume_comments(self.iter):
                 continue
+            if WhiteSpace.consume_white_space(self.iter):
+                continue
+            
             if sym := Symbol.from_iter(self.iter):
                 yield sym
             else:
