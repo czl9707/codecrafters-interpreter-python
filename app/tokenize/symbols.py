@@ -26,7 +26,7 @@ class Symbol(ABC):
         while not iter.EOF and len(sym) < 2:
             sym += next(iter)
 
-        while len(sym) > 1:
+        while sym:
             if Symbol.is_symbol(sym):
                 return Symbol._chr2symbol[sym]()
             

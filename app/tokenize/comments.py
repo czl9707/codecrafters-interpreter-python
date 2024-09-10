@@ -12,10 +12,9 @@ class Comments:
             for _ in sym:
                 iter.step_back()
             return False
-        
         else:
-            for ch in iter:
-                if ch == "\n":
+            while not iter.EOF:
+                if next(iter) == "\n":
                     break
                 
             return True
