@@ -113,6 +113,10 @@ class GreaterEqualSymbol(Symbol):
     symbol = ">="
     name = "GREATER_EQUAL"
 
+class SlashSymbol(Symbol):
+    symbol = "/"
+    name = "SLASH"
+
     
 class EOFSymbol(Symbol):
     symbol = ""
