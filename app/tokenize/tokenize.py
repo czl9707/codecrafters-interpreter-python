@@ -4,7 +4,6 @@ from typing import Iterator
 
 from ..helper.bi_direction_iterator import BiDirectionIterator
 
-from .no_op import Comments, WhiteSpace
 from .errors import UnexpectedCharacterError
 from .symbols import Symbol, EOFSymbol
 
@@ -29,21 +28,55 @@ class Tokenizer:
     def __init__(self, s: str) -> None:
         self.iter = BiDirectionIterator(s)
         self.error = False
+        self.line = 1
     
     def __iter__(self) -> Iterator[Symbol]:
         while not self.iter.EOF:
-            if Comments.consume_comments(self.iter):
-                continue
-            if WhiteSpace.consume_white_space(self.iter):
+            # print(self.iter.s[self.iter.index:])
+            if self.forward_until_next_valid():
                 continue
             
             if sym := Symbol.from_iter(self.iter):
                 yield sym
             else:
                 self.error = True
-                print(UnexpectedCharacterError(1, next(self.iter)), file=sys.stderr)
+                print(UnexpectedCharacterError(self.line, next(self.iter)), file=sys.stderr)
                 
         yield EOFSymbol()
         
+    # return value: consumed any characters
+    def forward_until_next_valid(self) -> bool:
+        s = next(self.iter)
+        if not s.isspace() and s != "/":
+            self.iter.step_back()
+            return False
+
+        # comments
+        if s == "/":
+            if self.iter.EOF:
+                self.iter.step_back()
+                return False
+            
+            s += next(self.iter)
+            if s != "//":
+                self.iter.step_back()
+                self.iter.step_back()
+                return False
+            
+            while not self.iter.EOF:
+                if next(self.iter) == "\n":
+                    self.iter.step_back()
+                    
+            return True
+        
+        # white spaces
+        else:
+            self.iter.step_back()
+            while (s:= next(self.iter)).isspace():
+                if s == "\n":
+                    self.line += 1
+            
+            self.iter.step_back()
+            return True
         
         
