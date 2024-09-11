@@ -72,11 +72,14 @@ class Tokenizer:
         # white spaces
         else:
             self.iter.step_back()
-            while not self.iter.EOF and (s:= next(self.iter)).isspace():
+            while not self.iter.EOF:
+                s = next(self.iter)
                 if s == "\n":
                     self.line += 1
+                if not s.isspace():
+                    self.iter.step_back()
+                    break
             
-            self.iter.step_back()
             return True
         
         
