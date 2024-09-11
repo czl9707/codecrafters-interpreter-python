@@ -66,6 +66,7 @@ class Tokenizer:
             while not self.iter.EOF:
                 if next(self.iter) == "\n":
                     self.iter.step_back()
+                    break
                     
             return True
         
