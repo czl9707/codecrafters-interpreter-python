@@ -3,7 +3,7 @@ from typing import Generic, TypeVar
 
 ValueT = TypeVar("ValueT")
 
-class BaseError(ABC, Generic[ValueT]):
+class BaseTokenizeError(ABC, Generic[ValueT], BaseException):
     __slots__ = ["line_num", "value"]
     msg_format: str
         
@@ -12,8 +12,8 @@ class BaseError(ABC, Generic[ValueT]):
         self.value = value
     
     def __str__(self) -> str:
-        return f"[line {self.line_num}] " + self.msg_format.format(self.value)
+        return f"[line {self.line_num}] Error: " + self.msg_format.format(self.value)
 
 
-class UnexpectedCharacterError(BaseError[str]):
-    msg_format = "Error: Unexpected character: {}"
+class UnexpectedCharacterError(BaseTokenizeError[str]):
+    msg_format = "Unexpected character: {}"

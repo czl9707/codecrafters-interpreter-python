@@ -2,10 +2,10 @@ from argparse import ArgumentParser, Namespace
 import sys
 from typing import Iterator
 
-from ..helper.bi_direction_iterator import BiDirectionIterator
+from .character_provider import CharacterProvider
 
-from .errors import UnexpectedCharacterError
-from .symbols import Symbol, EOFSymbol
+from .errors import BaseTokenizeError
+from .tokens import Token, EOFSymbol
 
 def config_tokenize_parser(arg_parser: ArgumentParser) -> None:
     arg_parser.add_argument("file")
@@ -21,65 +21,56 @@ def print_tokens(ns: Namespace) -> None:
     
     if tokenized.error:
         exit(65)
-    
 
 
 class Tokenizer:
     def __init__(self, s: str) -> None:
-        self.iter = BiDirectionIterator(s)
+        self.cp = CharacterProvider(s)
         self.error = False
-        self.line = 1
     
-    def __iter__(self) -> Iterator[Symbol]:
-        while not self.iter.EOF:
-            # print(self.iter.s[self.iter.index:])
+    def __iter__(self) -> Iterator[Token]:
+        while not self.cp.EOF:
+            # print(self.cp.s[self.cp.index:])
             if self.forward_until_next_valid():
                 continue
-            
-            if sym := Symbol.from_iter(self.iter):
-                yield sym
-            else:
+            try:
+                yield Token.from_iter(self.cp)
+            except BaseTokenizeError as e:
                 self.error = True
-                print(UnexpectedCharacterError(self.line, next(self.iter)), file=sys.stderr)
+                print(e, file=sys.stderr)
                 
         yield EOFSymbol()
         
     # return value: consumed any characters
     def forward_until_next_valid(self) -> bool:
-        s = next(self.iter)
+        s = next(self.cp)
         if not s.isspace() and s != "/":
-            self.iter.step_back()
+            self.cp.step_back()
             return False
 
         # comments
         if s == "/":
-            if self.iter.EOF:
-                self.iter.step_back()
+            if self.cp.EOF:
+                self.cp.step_back()
                 return False
             
-            s += next(self.iter)
+            s += next(self.cp)
             if s != "//":
-                self.iter.step_back()
-                self.iter.step_back()
+                self.cp.step_back(2)
                 return False
             
-            while not self.iter.EOF:
-                if next(self.iter) == "\n":
-                    self.iter.step_back()
+            while not self.cp.EOF:
+                if next(self.cp) == "\n":
                     break
                     
             return True
         
         # white spaces
         else:
-            self.iter.step_back()
-            while not self.iter.EOF:
-                s = next(self.iter)
-                if s == "\n":
-                    self.line += 1
-                if not s.isspace():
-                    self.iter.step_back()
-                    break
+            self.cp.step_back()
+            while not self.cp.EOF and (s:= next(self.cp)).isspace():
+                pass
+            self.cp.step_back()
             
             return True
         
