@@ -76,24 +76,26 @@ class NumberLiteral(Token):
             raise Exception("What the hack are you doing")
 
         num = ""
-        while not cp.EOF and (ch:=cp.forward()).isdigit():
-            num += ch
-        
-        if cp.EOF:
-            return NumberLiteral(num, int(num))
-        elif ch != ".":
-            cp.backward()
-            return NumberLiteral(num, int(num))
-        else:
-            num += "."
-            while not cp.EOF:
-                if (ch:=cp.forward()).isdigit():
-                    num += ch
-                else:
-                    cp.backward()
-                    break
+        while not cp.EOF:
+            if (ch:=cp.forward()).isdigit():
+                num += ch
+                continue
             
-            return NumberLiteral(num, float(num))
+            cp.backward()
+            break
+
+        if cp.top() != ".":
+            return NumberLiteral(num, int(num))
+        
+        num += cp.forward() # "."
+        while not cp.EOF:
+            if (ch:=cp.forward()).isdigit():
+                num += ch
+            else:
+                cp.backward()
+                break
+        
+        return NumberLiteral(num, float(num))
         
 
 class Symbol(Token):
