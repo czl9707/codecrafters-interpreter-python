@@ -1,6 +1,6 @@
 
 from abc import ABC
-from typing import Type, Optional
+from typing import Type, Optional, Union
 
 from .errors import UnexpectedCharacterError, UnterminatedStringError
 from .character_provider import CharacterProvider
@@ -62,9 +62,9 @@ class StringLiteral(Token):
 
 class NumberLiteral(Token):
     token_type = "NUMBER"
-    def __init__(self, integer: str, decimal: Optional[str] = None) -> None:
-        self.lexeme = integer + ("." + decimal if decimal else "")
-        self.literal = integer + "." + (decimal if decimal else "0")
+    def __init__(self, str_expression: str, value: Union[int, float]) -> None:
+        self.lexeme = str_expression
+        self.literal = str(value)
     
     @staticmethod
     def is_number_literal(cp: CharacterProvider) -> bool:
@@ -75,25 +75,25 @@ class NumberLiteral(Token):
         if not cp.top().isdigit():
             raise Exception("What the hack are you doing")
 
-        integer = ""
+        num = ""
         while not cp.EOF and (ch:=cp.forward()).isdigit():
-            integer += ch
+            num += ch
         
         if cp.EOF:
-            return NumberLiteral(integer)
+            return NumberLiteral(num, int(num))
         elif ch != ".":
             cp.backward()
-            return NumberLiteral(integer)
+            return NumberLiteral(num, int(num))
         else:
-            decimal = ""
+            num += "."
             while not cp.EOF:
                 if (ch:=cp.forward()).isdigit():
-                    decimal += ch
+                    num += ch
                 else:
                     cp.backward()
                     break
             
-            return NumberLiteral(integer, decimal)
+            return NumberLiteral(num, float(num))
         
 
 class Symbol(Token):
