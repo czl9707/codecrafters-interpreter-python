@@ -5,7 +5,7 @@ from typing import Iterator
 from .character_provider import CharacterProvider
 
 from .errors import BaseTokenizeError
-from .tokens import StringLiteral, Token, EOFSymbol
+from .tokens import NumberLiteral, StringLiteral, Token, EOFSymbol
 
 def config_tokenize_parser(arg_parser: ArgumentParser) -> None:
     arg_parser.add_argument("file")
@@ -35,8 +35,10 @@ class Tokenizer:
             if self.forward_until_next_valid():
                 continue
             try:
-                if self.cp.top() == "\"":
+                if StringLiteral.is_string_literal(self.cp):
                     yield StringLiteral.from_iter(self.cp)
+                elif NumberLiteral.is_number_literal(self.cp):
+                    yield NumberLiteral.from_iter(self.cp)
                 else:
                     yield Token.from_iter(self.cp)
             except BaseTokenizeError as e:

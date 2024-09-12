@@ -1,6 +1,6 @@
 
 from abc import ABC
-from typing import Type
+from typing import Type, Optional
 
 from .errors import UnexpectedCharacterError, UnterminatedStringError
 from .character_provider import CharacterProvider
@@ -41,7 +41,11 @@ class StringLiteral(Token):
     def __init__(self, value: str) -> None:
         self.literal = value
         self.lexeme = '"' + value + '"'
-        
+    
+    @staticmethod
+    def is_string_literal(cp: CharacterProvider) -> bool:
+        return cp.top() == "\""
+    
     @classmethod
     def from_iter(cls, cp: CharacterProvider) -> "StringLiteral":
         if cp.top() != "\"":
@@ -55,6 +59,37 @@ class StringLiteral(Token):
         
         else:
             return StringLiteral(s[:-1])
+
+class NumberLiteral(Token):
+    token_type = "NUMBER"
+    def __init__(self, integer: str, decimal: Optional[str] = None) -> None:
+        self.lexeme = integer + ("." + decimal if decimal else "")
+        self.literal = integer + "." + (decimal if decimal else "0")
+    
+    @staticmethod
+    def is_number_literal(cp: CharacterProvider) -> bool:
+        return cp.top().isdigit()
+    
+    @classmethod
+    def from_iter(cls, cp: CharacterProvider) -> "NumberLiteral":
+        if not cp.top().isdigit():
+            raise Exception("What the hack are you doing")
+
+        integer = ""
+        while (ch:=cp.forward()).isdigit():
+            integer += ch
+        
+        if ch != ".":
+            cp.backward()
+            decimal = None
+        else:
+            decimal = ""
+            while (ch:=cp.forward()).isdigit():
+                decimal += ch
+            cp.backward()            
+            
+        return NumberLiteral(integer, decimal)
+        
 
 class Symbol(Token):
     literal = "null"
