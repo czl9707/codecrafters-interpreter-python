@@ -5,7 +5,7 @@ from typing import Iterator
 from .character_provider import CharacterProvider
 
 from .errors import BaseTokenizeError
-from .tokens import Token, EOFSymbol
+from .tokens import StringLiteral, Token, EOFSymbol
 
 def config_tokenize_parser(arg_parser: ArgumentParser) -> None:
     arg_parser.add_argument("file")
@@ -31,10 +31,14 @@ class Tokenizer:
     def __iter__(self) -> Iterator[Token]:
         while not self.cp.EOF:
             # print(self.cp.s[self.cp.index:])
+            
             if self.forward_until_next_valid():
                 continue
             try:
-                yield Token.from_iter(self.cp)
+                if self.cp.top() == "\"":
+                    yield StringLiteral.from_iter(self.cp)
+                else:
+                    yield Token.from_iter(self.cp)
             except BaseTokenizeError as e:
                 self.error = True
                 print(e, file=sys.stderr)
@@ -43,35 +47,24 @@ class Tokenizer:
         
     # return value: consumed any characters
     def forward_until_next_valid(self) -> bool:
-        s = next(self.cp)
-        if not s.isspace() and s != "/":
-            self.cp.step_back()
-            return False
-
         # comments
-        if s == "/":
-            if self.cp.EOF:
-                self.cp.step_back()
-                return False
-            
-            s += next(self.cp)
-            if s != "//":
-                self.cp.step_back(2)
-                return False
-            
+        if self.cp.top(2) == "//":            
             while not self.cp.EOF:
-                if next(self.cp) == "\n":
+                if self.cp.forward() == "\n":
+                    self.cp.backward()
                     break
                     
             return True
         
         # white spaces
-        else:
-            self.cp.step_back()
-            while not self.cp.EOF and (s:= next(self.cp)).isspace():
-                pass
-            self.cp.step_back()
+        elif self.cp.top().isspace():
+            while not self.cp.EOF:
+                if not self.cp.forward().isspace():
+                    self.cp.backward()
+                    break
             
             return True
+        
+        return False
         
         

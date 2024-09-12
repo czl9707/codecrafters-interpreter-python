@@ -5,19 +5,28 @@ class CharacterProvider:
         self.index = 0
         self.line = 1
     
-    def __next__(self) -> str:
-        if self.EOF:
+    def forward(self, step: int = 1) -> str:
+        if self.index + step > self.string_len:
             raise StopIteration
         
-        self.index += 1
-        if self.s[self.index - 1] == "\n":
-            self.line += 1
-        return self.s[self.index - 1]
+        self.line += self.s.count("\n", self.index, self.index + step)
+        self.index += step
+        return self.s[self.index - step: self.index]
 
                 
-    def step_back(self, step = 1) -> None:
+    def backward(self, step:int = 1) -> None:
         self.index -= step
         self.line -= self.s.count("\n", self.index, self.index + step)
+    
+    def top(self, step: int = 1) -> str:
+        return self.s[self.index: self.index + step]
+    
+    def forward_until(self, s:str) -> str:
+        end = self.s.find(s, self.index, -1)
+        if end == -1:
+            return self.forward(self.string_len - self.index)
+        else:
+            return self.forward(end - self.index + 1)
     
     @property
     def EOF(self) -> bool:

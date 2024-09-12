@@ -17,3 +17,6 @@ class BaseTokenizeError(ABC, Generic[ValueT], BaseException):
 
 class UnexpectedCharacterError(BaseTokenizeError[str]):
     msg_format = "Unexpected character: {}"
+    
+class UnterminatedStringError(BaseTokenizeError[None]):
+    msg_format = "Unterminated string."
