@@ -64,7 +64,7 @@ class NumberLiteral(Token):
     token_type = "NUMBER"
     def __init__(self, str_expression: str, value: Union[int, float]) -> None:
         self.lexeme = str_expression
-        self.literal = str(value)
+        self.literal = str(float(value))
     
     @staticmethod
     def is_number_literal(cp: CharacterProvider) -> bool:
