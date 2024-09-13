@@ -85,7 +85,7 @@ class GroupExpression(Expression):
             self.expr = Expression.from_token(token, self.expr, iter)
         
     def __str__(self) -> str:
-        return f"(grouping {self.expr if self.expr else ''})"
+        return f"(group {self.expr if self.expr else ''})"
 
     @staticmethod
     def from_token(
