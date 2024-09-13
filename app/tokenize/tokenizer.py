@@ -35,12 +35,7 @@ class Tokenizer:
             if self.forward_until_next_valid():
                 continue
             try:
-                if StringLiteral.is_string_literal(self.cp):
-                    yield StringLiteral.from_iter(self.cp)
-                elif NumberLiteral.is_number_literal(self.cp):
-                    yield NumberLiteral.from_iter(self.cp)
-                else:
-                    yield Token.from_iter(self.cp)
+                yield Token.from_iter(self.cp)
             except BaseTokenizeError as e:
                 self.error = True
                 print(e, file=sys.stderr)
@@ -51,19 +46,13 @@ class Tokenizer:
     def forward_until_next_valid(self) -> bool:
         # comments
         if self.cp.top(2) == "//":            
-            while not self.cp.EOF:
-                if self.cp.forward() == "\n":
-                    self.cp.backward()
-                    break
-                    
+            self.cp.forward_until("\n")
             return True
         
         # white spaces
         elif self.cp.top().isspace():
-            while not self.cp.EOF:
-                if not self.cp.forward().isspace():
-                    self.cp.backward()
-                    break
+            while self.cp.top().isspace():
+                self.cp.forward()
             
             return True
         

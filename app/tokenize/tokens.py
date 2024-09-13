@@ -16,35 +16,69 @@ class Token(ABC):
 
     
     @staticmethod
-    def is_symbol(symbol: str) -> bool:
-        if not symbol: 
-            return False
-        
-        return symbol in Token._type2symbol_class
+    def is_symbol(cp: CharacterProvider) -> bool:
+        return (
+            cp.top() in Token._type2symbol_class or 
+            cp.top(2) in Token._type2symbol_class
+        )
+            
+    @staticmethod
+    def is_identifier(cp: CharacterProvider) -> bool:
+        return cp.top().isalnum() or cp.top() == "_"
+    
+    @staticmethod
+    def is_string_literal(cp: CharacterProvider) -> bool:
+        return cp.top() == "\""
+    
+    @staticmethod
+    def is_number_literal(cp: CharacterProvider) -> bool:
+        return cp.top().isdigit()
+    
     
     @classmethod
     def from_iter(cls, cp: CharacterProvider) -> "Token":
-        for l in range(2, 0, -1):
-            sym = cp.top(l)
-            if Token.is_symbol(sym):
-                cp.forward(len(sym))
-                return Token._type2symbol_class[sym]()
+        if Token.is_symbol(cp):
+            return Symbol.from_iter(cp)
+        elif Token.is_string_literal(cp):
+            return StringLiteral.from_iter(cp)
+        elif Token.is_number_literal(cp):
+            return NumberLiteral.from_iter(cp)
+        elif Token.is_identifier(cp):
+            return Identifier.from_iter(cp)
 
         raise UnexpectedCharacterError(cp.line, cp.forward())
     
     def __str__(self) -> str:
         return f"{self.token_type} {self.lexeme} {self.literal}"
 
+class Identifier(Token):
+    token_type = "IDENTIFIER"
+    literal = "null"
+     
+    def __init__(self, value: str) -> None:
+        self.lexeme = value
+    
+    @staticmethod
+    def __valid_char(ch: str) -> bool:
+        return ch.isalnum() or ch == "_"
+
+    @classmethod
+    def from_iter(cls, cp: CharacterProvider) -> "Identifier":
+        if not Identifier.__valid_char(cp.top()):
+            raise Exception("What the hack are you doing")
+        
+        s = ""
+        while Identifier.__valid_char(cp.top()):
+            s += cp.forward()
+        
+        return Identifier(s)
+    
 
 class StringLiteral(Token):
     token_type = "STRING"
     def __init__(self, value: str) -> None:
         self.literal = value
         self.lexeme = '"' + value + '"'
-    
-    @staticmethod
-    def is_string_literal(cp: CharacterProvider) -> bool:
-        return cp.top() == "\""
     
     @classmethod
     def from_iter(cls, cp: CharacterProvider) -> "StringLiteral":
@@ -66,34 +100,22 @@ class NumberLiteral(Token):
         self.lexeme = str_expression
         self.literal = str(float(value))
     
-    @staticmethod
-    def is_number_literal(cp: CharacterProvider) -> bool:
-        return cp.top().isdigit()
-    
     @classmethod
     def from_iter(cls, cp: CharacterProvider) -> "NumberLiteral":
         if not cp.top().isdigit():
             raise Exception("What the hack are you doing")
 
         num = ""
-        while not cp.EOF:
-            if (ch:=cp.forward()).isdigit():
-                num += ch
-                continue
+        while cp.top().isdigit():
+            num += cp.forward()
             
-            cp.backward()
-            break
-
         if cp.top() != ".":
             return NumberLiteral(num, int(num))
         
         num += cp.forward() # "."
-        while not cp.EOF:
-            if (ch:=cp.forward()).isdigit():
-                num += ch
-            else:
-                cp.backward()
-                break
+        
+        while cp.top().isdigit():
+            num += cp.forward()
         
         return NumberLiteral(num, float(num))
         
@@ -105,6 +127,14 @@ class Symbol(Token):
     def __init_subclass__(cls: Type["Symbol"]) -> None:
         Token._type2symbol_class[cls.lexeme] = cls
 
+    @classmethod
+    def from_iter(cls, cp: CharacterProvider) -> "Symbol":
+        if cp.top(2) in Token._type2symbol_class:
+            return Token._type2symbol_class[cp.forward(2)]()
+        if cp.top() in Token._type2symbol_class:
+            return Token._type2symbol_class[cp.forward()]()
+        
+        raise Exception("What the hack are you doing")
 
 class LeftBraceSymbol(Symbol):
     token_type = "LEFT_BRACE"
