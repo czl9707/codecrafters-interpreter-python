@@ -129,10 +129,10 @@ class Symbol(Token):
 
     @classmethod
     def from_iter(cls, cp: CharacterProvider) -> "Symbol":
-        if cp.top(2) in Token._type2symbol_class:
-            return Token._type2symbol_class[cp.forward(2)]()
-        if cp.top() in Token._type2symbol_class:
-            return Token._type2symbol_class[cp.forward()]()
+        for l in range(2, 0, -1):
+            sym = cp.top(l)
+            if cp.top(l) in Token._type2symbol_class:
+                return Token._type2symbol_class[cp.forward(len(sym))]()
         
         raise Exception("What the hack are you doing")
 
