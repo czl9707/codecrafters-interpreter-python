@@ -9,6 +9,7 @@ from .character_provider import CharacterProvider
 class Token(ABC):
     __slots__ = ["literal", "token_type", "lexeme"]
     _type2symbol_class: dict[str, Type['Symbol']] = {}
+    _type2reserved_class: dict[str, Type['ReservedWord']] = {}
 
     token_type: str
     lexeme: str
@@ -17,10 +18,17 @@ class Token(ABC):
     
     @staticmethod
     def is_symbol(cp: CharacterProvider) -> bool:
-        return (
-            cp.top() in Token._type2symbol_class or 
-            cp.top(2) in Token._type2symbol_class
-        )
+        for l in range(2, 0, -1):
+            if cp.top(l) in Token._type2symbol_class:
+                return True
+        return False
+
+    @staticmethod
+    def is_reserved_word(cp: CharacterProvider) -> bool:
+        for l in range(6, 1, -1):
+            if cp.top(l) in Token._type2reserved_class:
+                return True
+        return False
             
     @staticmethod
     def is_identifier(cp: CharacterProvider) -> bool:
@@ -34,11 +42,12 @@ class Token(ABC):
     def is_number_literal(cp: CharacterProvider) -> bool:
         return cp.top().isdigit()
     
-    
     @classmethod
     def from_iter(cls, cp: CharacterProvider) -> "Token":
         if Token.is_symbol(cp):
             return Symbol.from_iter(cp)
+        elif Token.is_reserved_word(cp):
+            return ReservedWord.from_iter(cp)
         elif Token.is_string_literal(cp):
             return StringLiteral.from_iter(cp)
         elif Token.is_number_literal(cp):
@@ -136,6 +145,22 @@ class Symbol(Token):
         
         raise Exception("What the hack are you doing")
 
+class ReservedWord(Token):
+    literal = "null"
+    
+    @classmethod
+    def __init_subclass__(cls: Type["ReservedWord"]) -> None:
+        Token._type2reserved_class[cls.lexeme] = cls
+    
+    @classmethod
+    def from_iter(cls, cp: CharacterProvider) -> "ReservedWord":
+        for l in range(6, 1, -1):
+            sym = cp.top(l)
+            if cp.top(l) in Token._type2symbol_class:
+                return Token._type2reserved_class[cp.forward(len(sym))]()
+        
+        raise Exception("What the hack are you doing")
+
 class LeftBraceSymbol(Symbol):
     token_type = "LEFT_BRACE"
     lexeme = "{"
@@ -216,3 +241,67 @@ class EOFSymbol(Symbol):
     token_type = "EOF"
     lexeme = ""
     
+class AndReservedWord(ReservedWord):
+    token_type = "AND"
+    lexeme = "and"
+
+class ClassReservedWord(ReservedWord):
+    token_type = "CLASS"
+    lexeme = "class"
+
+class ElseReservedWord(ReservedWord):
+    token_type = "ELSE"
+    lexeme = "else"
+
+class FalseReservedWord(ReservedWord):
+    token_type = "FALSE"
+    lexeme = "false"
+
+class ForReservedWord(ReservedWord):
+    token_type = "FOR"
+    lexeme = "for"
+
+class FunReservedWord(ReservedWord):
+    token_type = "FUN"
+    lexeme = "fun"
+
+class IfReservedWord(ReservedWord):
+    token_type = "IF"
+    lexeme = "if"
+
+class NilReservedWord(ReservedWord):
+    token_type = "NIL"
+    lexeme = "nil"
+
+class OrReservedWord(ReservedWord):
+    token_type = "OR"
+    lexeme = "or"
+
+class PrintReservedWord(ReservedWord):
+    token_type = "PRINT"
+    lexeme = "print"
+
+class ReturnReservedWord(ReservedWord):
+    token_type = "RETURN"
+    lexeme = "return"
+
+class SuperReservedWord(ReservedWord):
+    token_type = "SUPER"
+    lexeme = "super"
+
+class ThisReservedWord(ReservedWord):
+    token_type = "THIS"
+    lexeme = "this"
+
+class TrueReservedWord(ReservedWord):
+    token_type = "TRUE"
+    lexeme = "true"
+
+class VarReservedWord(ReservedWord):
+    token_type = "VAR"
+    lexeme = "var"
+
+class WhileReservedWord(ReservedWord):
+    token_type = "WHILE"
+    lexeme = "while"
+
