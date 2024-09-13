@@ -5,7 +5,7 @@ from typing import Iterator
 from .character_provider import CharacterProvider
 
 from .errors import BaseTokenizeError
-from .tokens import NumberLiteral, StringLiteral, Token, EOFSymbol
+from .tokens import Token, EOFSymbol
 
 def config_tokenize_parser(arg_parser: ArgumentParser) -> None:
     arg_parser.add_argument("file")
@@ -32,7 +32,7 @@ class Tokenizer:
         while not self.cp.EOF:
             # print(self.cp.s[self.cp.index:])
             
-            if self.forward_until_next_valid():
+            if self.__forward_until_next_valid():
                 continue
             try:
                 yield Token.from_iter(self.cp)
@@ -43,7 +43,7 @@ class Tokenizer:
         yield EOFSymbol()
         
     # return value: consumed any characters
-    def forward_until_next_valid(self) -> bool:
+    def __forward_until_next_valid(self) -> bool:
         # comments
         if self.cp.top(2) == "//":            
             self.cp.forward_until("\n")

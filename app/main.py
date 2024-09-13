@@ -1,5 +1,6 @@
 from argparse import ArgumentParser, Namespace
-from .tokenize import config_tokenize_parser
+from .tokens import config_tokenize_parser
+from .parse import config_parse_parser
 
 def main():
     args = parse_args()
@@ -11,6 +12,8 @@ def parse_args() -> Namespace:
     sub_parser = arg_parser.add_subparsers()
     
     config_tokenize_parser(sub_parser.add_parser("tokenize"))
+    config_parse_parser(sub_parser.add_parser("parse"))
+
     
     return arg_parser.parse_args()
 

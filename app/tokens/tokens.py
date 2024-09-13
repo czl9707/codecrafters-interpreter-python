@@ -1,10 +1,12 @@
 
-from abc import ABC
-from typing import Type, Optional, Union
+from abc import ABC, abstractmethod
+from typing import Type, Union
 
 from .errors import UnexpectedCharacterError, UnterminatedStringError
 from .character_provider import CharacterProvider
 
+from ..expressions import Expression, LiteralExpression
+    
 
 class Token(ABC):
     __slots__ = ["literal", "token_type", "lexeme"]
@@ -14,7 +16,6 @@ class Token(ABC):
     token_type: str
     lexeme: str
     literal: str
-
     
     @staticmethod
     def is_symbol(cp: CharacterProvider) -> bool:
@@ -60,7 +61,20 @@ class Token(ABC):
     def __str__(self) -> str:
         return f"{self.token_type} {self.lexeme} {self.literal}"
 
-class Identifier(Token):
+    @abstractmethod
+    def as_expression(self) -> Expression:
+        ...
+
+class NotImplementedExpressionToken(Token):
+    def as_expression(self) -> Expression:
+        raise NotImplementedError()
+    
+class LiteralToken(Token, ABC):
+    def as_expression(self) -> LiteralExpression:
+        return LiteralExpression(self)
+
+
+class Identifier(NotImplementedExpressionToken, Token):
     token_type = "IDENTIFIER"
     literal = "null"
      
@@ -83,7 +97,7 @@ class Identifier(Token):
         return Identifier(s)
     
 
-class StringLiteral(Token):
+class StringLiteral(LiteralToken):
     token_type = "STRING"
     def __init__(self, value: str) -> None:
         self.literal = value
@@ -103,7 +117,8 @@ class StringLiteral(Token):
         else:
             return StringLiteral(s[:-1])
 
-class NumberLiteral(Token):
+
+class NumberLiteral(LiteralToken):
     token_type = "NUMBER"
     def __init__(self, str_expression: str, value: Union[int, float]) -> None:
         self.lexeme = str_expression
@@ -129,7 +144,7 @@ class NumberLiteral(Token):
         return NumberLiteral(num, float(num))
         
 
-class Symbol(Token):
+class Symbol(Token, ABC):
     literal = "null"
     
     @classmethod
@@ -145,7 +160,8 @@ class Symbol(Token):
         
         raise Exception("What the hack are you doing")
 
-class ReservedWord(Token):
+
+class ReservedWord(Token, ABC):
     literal = "null"
     
     @classmethod
@@ -161,147 +177,148 @@ class ReservedWord(Token):
         
         raise Exception("What the hack are you doing")
 
-class LeftBraceSymbol(Symbol):
+
+class LeftBraceSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "LEFT_BRACE"
     lexeme = "{"
     
-class RightBraceSymbol(Symbol):
+class RightBraceSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "RIGHT_BRACE"
     lexeme = "}"
     
-class LeftParenthesisSymbol(Symbol):
+class LeftParenthesisSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "LEFT_PAREN"
     lexeme = "("
     
-class RightParenthesisSymbol(Symbol):
+class RightParenthesisSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "RIGHT_PAREN"
     lexeme = ")"
     
-class StarSymbol(Symbol):
+class StarSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "STAR"
     lexeme = "*" 
     
-class DotSymbol(Symbol):
+class DotSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "DOT"
     lexeme = "." 
     
-class CommaSymbol(Symbol):
+class CommaSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "COMMA"
     lexeme = "," 
     
-class PlusSymbol(Symbol):
+class PlusSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "PLUS"
     lexeme = "+" 
 
-class MinusSymbol(Symbol):
+class MinusSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "MINUS"
     lexeme = "-" 
 
-class SemicolonSymbol(Symbol):
+class SemicolonSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "SEMICOLON"
     lexeme = ";" 
     
-class EqualSymbol(Symbol):
+class EqualSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "EQUAL"
     lexeme = "=" 
     
-class EqualEqualSymbol(Symbol):
+class EqualEqualSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "EQUAL_EQUAL"
     lexeme = "==" 
     
-class BangSymbol(Symbol):
+class BangSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "BANG"
     lexeme = "!"
 
-class BangEqualSymbol(Symbol):
+class BangEqualSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "BANG_EQUAL"
     lexeme = "!="
     
-class LessSymbol(Symbol):
+class LessSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "LESS"
     lexeme = "<"
 
-class LessEqualSymbol(Symbol):
+class LessEqualSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "LESS_EQUAL"
     lexeme = "<="
 
-class GreaterSymbol(Symbol):
+class GreaterSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "GREATER"
     lexeme = ">"
 
-class GreaterEqualSymbol(Symbol):
+class GreaterEqualSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "GREATER_EQUAL"
     lexeme = ">="
 
-class SlashSymbol(Symbol):
+class SlashSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "SLASH"
     lexeme = "/"
     
-class EOFSymbol(Symbol):
+class EOFSymbol(NotImplementedExpressionToken, Symbol):
     token_type = "EOF"
     lexeme = ""
     
-class AndReservedWord(ReservedWord):
+class AndReservedWord(NotImplementedExpressionToken, ReservedWord):
     token_type = "AND"
     lexeme = "and"
 
-class ClassReservedWord(ReservedWord):
+class ClassReservedWord(NotImplementedExpressionToken, ReservedWord):
     token_type = "CLASS"
     lexeme = "class"
 
-class ElseReservedWord(ReservedWord):
+class ElseReservedWord(NotImplementedExpressionToken, ReservedWord):
     token_type = "ELSE"
     lexeme = "else"
 
-class FalseReservedWord(ReservedWord):
+class FalseReservedWord(LiteralToken, ReservedWord):
     token_type = "FALSE"
     lexeme = "false"
 
-class ForReservedWord(ReservedWord):
-    token_type = "FOR"
-    lexeme = "for"
-
-class FunReservedWord(ReservedWord):
-    token_type = "FUN"
-    lexeme = "fun"
-
-class IfReservedWord(ReservedWord):
-    token_type = "IF"
-    lexeme = "if"
-
-class NilReservedWord(ReservedWord):
-    token_type = "NIL"
-    lexeme = "nil"
-
-class OrReservedWord(ReservedWord):
-    token_type = "OR"
-    lexeme = "or"
-
-class PrintReservedWord(ReservedWord):
-    token_type = "PRINT"
-    lexeme = "print"
-
-class ReturnReservedWord(ReservedWord):
-    token_type = "RETURN"
-    lexeme = "return"
-
-class SuperReservedWord(ReservedWord):
-    token_type = "SUPER"
-    lexeme = "super"
-
-class ThisReservedWord(ReservedWord):
-    token_type = "THIS"
-    lexeme = "this"
-
-class TrueReservedWord(ReservedWord):
+class TrueReservedWord(LiteralToken, ReservedWord):
     token_type = "TRUE"
     lexeme = "true"
 
-class VarReservedWord(ReservedWord):
+class NilReservedWord(LiteralToken, ReservedWord):
+    token_type = "NIL"
+    lexeme = "nil"
+
+class ForReservedWord(NotImplementedExpressionToken, ReservedWord):
+    token_type = "FOR"
+    lexeme = "for"
+
+class FunReservedWord(NotImplementedExpressionToken, ReservedWord):
+    token_type = "FUN"
+    lexeme = "fun"
+
+class IfReservedWord(NotImplementedExpressionToken, ReservedWord):
+    token_type = "IF"
+    lexeme = "if"
+
+class OrReservedWord(NotImplementedExpressionToken, ReservedWord):
+    token_type = "OR"
+    lexeme = "or"
+
+class PrintReservedWord(NotImplementedExpressionToken, ReservedWord):
+    token_type = "PRINT"
+    lexeme = "print"
+
+class ReturnReservedWord(NotImplementedExpressionToken, ReservedWord):
+    token_type = "RETURN"
+    lexeme = "return"
+
+class SuperReservedWord(NotImplementedExpressionToken, ReservedWord):
+    token_type = "SUPER"
+    lexeme = "super"
+
+class ThisReservedWord(NotImplementedExpressionToken, ReservedWord):
+    token_type = "THIS"
+    lexeme = "this"
+
+class VarReservedWord(NotImplementedExpressionToken, ReservedWord):
     token_type = "VAR"
     lexeme = "var"
 
-class WhileReservedWord(ReservedWord):
+class WhileReservedWord(NotImplementedExpressionToken, ReservedWord):
     token_type = "WHILE"
     lexeme = "while"
 
