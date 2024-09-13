@@ -15,4 +15,6 @@ class LiteralExpression(Expression):
         self.value = value
     
     def __str__(self) -> str:
-        return self.value.lexeme
+        if self.value.literal == "null":
+            return self.value.lexeme 
+        return self.value.literal
