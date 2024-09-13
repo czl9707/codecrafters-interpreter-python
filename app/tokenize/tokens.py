@@ -156,7 +156,7 @@ class ReservedWord(Token):
     def from_iter(cls, cp: CharacterProvider) -> "ReservedWord":
         for l in range(6, 1, -1):
             sym = cp.top(l)
-            if cp.top(l) in Token._type2symbol_class:
+            if cp.top(l) in Token._type2reserved_class:
                 return Token._type2reserved_class[cp.forward(len(sym))]()
         
         raise Exception("What the hack are you doing")
