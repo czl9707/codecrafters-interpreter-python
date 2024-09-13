@@ -1,10 +1,9 @@
 from argparse import ArgumentParser, Namespace
 from typing import TYPE_CHECKING
 
-from ..tokens import Tokenizer
+from ..tokens import Tokenizer, EOFSymbol
+from ..expressions import Expression
 
-if TYPE_CHECKING:
-    from ..expressions.expressions import Expression
 
 def config_parse_parser(arg_parser: ArgumentParser) -> None:
     arg_parser.add_argument("file")
@@ -16,10 +15,12 @@ def print_parse_result(ns: Namespace) -> None:
     
     token_iter = iter(Tokenizer(file_contents))
     expressions: list[Expression] = []
-    root: Expression = next(token_iter).as_expression()
-    leaf: Expression = root
     
     for token in token_iter:
-        pass
+        if token.__class__ == EOFSymbol:
+            break
+        
+        print(
+            Expression.from_token(token, None, token_iter)
+        )
     
-    print(root)

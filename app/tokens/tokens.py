@@ -1,11 +1,17 @@
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Type, Union
 
 from .errors import UnexpectedCharacterError, UnterminatedStringError
 from .character_provider import CharacterProvider
 
-from ..expressions import Expression, LiteralExpression
+from ..expressions import (
+    LiteralExpression, 
+    GroupExpression, 
+    BinaryExpression, 
+    UnaryExpression,
+    UnaryBinaryExpressionRouter, 
+)
     
 
 class Token(ABC):
@@ -61,20 +67,8 @@ class Token(ABC):
     def __str__(self) -> str:
         return f"{self.token_type} {self.lexeme} {self.literal}"
 
-    @abstractmethod
-    def as_expression(self) -> Expression:
-        ...
 
-class NotImplementedExpressionToken(Token):
-    def as_expression(self) -> Expression:
-        raise NotImplementedError()
-    
-class LiteralToken(Token, ABC):
-    def as_expression(self) -> LiteralExpression:
-        return LiteralExpression(self)
-
-
-class Identifier(NotImplementedExpressionToken, Token):
+class Identifier(Token):
     token_type = "IDENTIFIER"
     literal = "null"
      
@@ -95,9 +89,10 @@ class Identifier(NotImplementedExpressionToken, Token):
             s += cp.forward()
         
         return Identifier(s)
+ 
     
-
-class StringLiteral(LiteralToken):
+@LiteralExpression.register
+class StringLiteral(Token):
     token_type = "STRING"
     def __init__(self, value: str) -> None:
         self.literal = value
@@ -118,7 +113,8 @@ class StringLiteral(LiteralToken):
             return StringLiteral(s[:-1])
 
 
-class NumberLiteral(LiteralToken):
+@LiteralExpression.register
+class NumberLiteral(Token):
     token_type = "NUMBER"
     def __init__(self, str_expression: str, value: Union[int, float]) -> None:
         self.lexeme = str_expression
@@ -178,147 +174,165 @@ class ReservedWord(Token, ABC):
         raise Exception("What the hack are you doing")
 
 
-class LeftBraceSymbol(NotImplementedExpressionToken, Symbol):
+class LeftBraceSymbol(Symbol):
     token_type = "LEFT_BRACE"
     lexeme = "{"
     
-class RightBraceSymbol(NotImplementedExpressionToken, Symbol):
+class RightBraceSymbol(Symbol):
     token_type = "RIGHT_BRACE"
     lexeme = "}"
-    
-class LeftParenthesisSymbol(NotImplementedExpressionToken, Symbol):
+
+@GroupExpression.register
+class LeftParenthesisSymbol(Symbol):
     token_type = "LEFT_PAREN"
     lexeme = "("
     
-class RightParenthesisSymbol(NotImplementedExpressionToken, Symbol):
+class RightParenthesisSymbol(Symbol):
     token_type = "RIGHT_PAREN"
     lexeme = ")"
-    
-class StarSymbol(NotImplementedExpressionToken, Symbol):
+
+@BinaryExpression.register
+class StarSymbol(Symbol):
     token_type = "STAR"
     lexeme = "*" 
     
-class DotSymbol(NotImplementedExpressionToken, Symbol):
+class DotSymbol(Symbol):
     token_type = "DOT"
     lexeme = "." 
     
-class CommaSymbol(NotImplementedExpressionToken, Symbol):
+class CommaSymbol(Symbol):
     token_type = "COMMA"
     lexeme = "," 
-    
-class PlusSymbol(NotImplementedExpressionToken, Symbol):
+
+@BinaryExpression.register
+class PlusSymbol(Symbol):
     token_type = "PLUS"
     lexeme = "+" 
 
-class MinusSymbol(NotImplementedExpressionToken, Symbol):
+@UnaryBinaryExpressionRouter.register
+class MinusSymbol(Symbol):
     token_type = "MINUS"
     lexeme = "-" 
 
-class SemicolonSymbol(NotImplementedExpressionToken, Symbol):
+class SemicolonSymbol(Symbol):
     token_type = "SEMICOLON"
     lexeme = ";" 
-    
-class EqualSymbol(NotImplementedExpressionToken, Symbol):
+
+@BinaryExpression.register
+class EqualSymbol(Symbol):
     token_type = "EQUAL"
     lexeme = "=" 
-    
-class EqualEqualSymbol(NotImplementedExpressionToken, Symbol):
+
+@BinaryExpression.register
+class EqualEqualSymbol(Symbol):
     token_type = "EQUAL_EQUAL"
     lexeme = "==" 
-    
-class BangSymbol(NotImplementedExpressionToken, Symbol):
+
+@UnaryExpression.register
+class BangSymbol(Symbol):
     token_type = "BANG"
     lexeme = "!"
 
-class BangEqualSymbol(NotImplementedExpressionToken, Symbol):
+@BinaryExpression.register
+class BangEqualSymbol(Symbol):
     token_type = "BANG_EQUAL"
     lexeme = "!="
-    
-class LessSymbol(NotImplementedExpressionToken, Symbol):
+
+@BinaryExpression.register
+class LessSymbol(Symbol):
     token_type = "LESS"
     lexeme = "<"
 
-class LessEqualSymbol(NotImplementedExpressionToken, Symbol):
+@BinaryExpression.register
+class LessEqualSymbol(Symbol):
     token_type = "LESS_EQUAL"
     lexeme = "<="
 
-class GreaterSymbol(NotImplementedExpressionToken, Symbol):
+@BinaryExpression.register
+class GreaterSymbol(Symbol):
     token_type = "GREATER"
     lexeme = ">"
 
-class GreaterEqualSymbol(NotImplementedExpressionToken, Symbol):
+@BinaryExpression.register
+class GreaterEqualSymbol(Symbol):
     token_type = "GREATER_EQUAL"
     lexeme = ">="
 
-class SlashSymbol(NotImplementedExpressionToken, Symbol):
+@BinaryExpression.register
+class SlashSymbol(Symbol):
     token_type = "SLASH"
     lexeme = "/"
     
-class EOFSymbol(NotImplementedExpressionToken, Symbol):
+class EOFSymbol(Symbol):
     token_type = "EOF"
     lexeme = ""
-    
-class AndReservedWord(NotImplementedExpressionToken, ReservedWord):
+
+@BinaryExpression.register
+class AndReservedWord(ReservedWord):
     token_type = "AND"
     lexeme = "and"
 
-class ClassReservedWord(NotImplementedExpressionToken, ReservedWord):
+class ClassReservedWord(ReservedWord):
     token_type = "CLASS"
     lexeme = "class"
 
-class ElseReservedWord(NotImplementedExpressionToken, ReservedWord):
+class ElseReservedWord(ReservedWord):
     token_type = "ELSE"
     lexeme = "else"
 
-class FalseReservedWord(LiteralToken, ReservedWord):
+@LiteralExpression.register
+class FalseReservedWord(ReservedWord):
     token_type = "FALSE"
     lexeme = "false"
 
-class TrueReservedWord(LiteralToken, ReservedWord):
+@LiteralExpression.register
+class TrueReservedWord(ReservedWord):
     token_type = "TRUE"
     lexeme = "true"
 
-class NilReservedWord(LiteralToken, ReservedWord):
+@LiteralExpression.register
+class NilReservedWord(ReservedWord):
     token_type = "NIL"
     lexeme = "nil"
 
-class ForReservedWord(NotImplementedExpressionToken, ReservedWord):
+class ForReservedWord(ReservedWord):
     token_type = "FOR"
     lexeme = "for"
 
-class FunReservedWord(NotImplementedExpressionToken, ReservedWord):
+class FunReservedWord(ReservedWord):
     token_type = "FUN"
     lexeme = "fun"
 
-class IfReservedWord(NotImplementedExpressionToken, ReservedWord):
+class IfReservedWord(ReservedWord):
     token_type = "IF"
     lexeme = "if"
 
-class OrReservedWord(NotImplementedExpressionToken, ReservedWord):
+@BinaryExpression.register
+class OrReservedWord(ReservedWord):
     token_type = "OR"
     lexeme = "or"
 
-class PrintReservedWord(NotImplementedExpressionToken, ReservedWord):
+class PrintReservedWord(ReservedWord):
     token_type = "PRINT"
     lexeme = "print"
 
-class ReturnReservedWord(NotImplementedExpressionToken, ReservedWord):
+class ReturnReservedWord(ReservedWord):
     token_type = "RETURN"
     lexeme = "return"
 
-class SuperReservedWord(NotImplementedExpressionToken, ReservedWord):
+class SuperReservedWord(ReservedWord):
     token_type = "SUPER"
     lexeme = "super"
 
-class ThisReservedWord(NotImplementedExpressionToken, ReservedWord):
+class ThisReservedWord(ReservedWord):
     token_type = "THIS"
     lexeme = "this"
 
-class VarReservedWord(NotImplementedExpressionToken, ReservedWord):
+class VarReservedWord(ReservedWord):
     token_type = "VAR"
     lexeme = "var"
 
-class WhileReservedWord(NotImplementedExpressionToken, ReservedWord):
+class WhileReservedWord(ReservedWord):
     token_type = "WHILE"
     lexeme = "while"
 
