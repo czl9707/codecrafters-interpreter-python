@@ -1,5 +1,5 @@
 from argparse import ArgumentParser, Namespace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from ..tokens import Tokenizer, EOFSymbol
 from ..expressions import Expression
@@ -14,13 +14,11 @@ def print_parse_result(ns: Namespace) -> None:
         file_contents = fd.read()
     
     token_iter = iter(Tokenizer(file_contents))
-    expressions: list[Expression] = []
+    expression: Optional[Expression] = None
     
     for token in token_iter:
         if token.__class__ == EOFSymbol:
             break
-        
-        print(
-            Expression.from_token(token, None, token_iter)
-        )
+        expression = Expression.from_token(token, expression, token_iter)
     
+    print(expression)
