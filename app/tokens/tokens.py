@@ -2,7 +2,7 @@
 from abc import ABC
 from typing import Type, Union
 
-from .errors import UnexpectedCharacterError, UnterminatedStringError
+from ..utils import UnexpectedCharacterError, UnterminatedStringError
 from .character_provider import CharacterProvider
 
 from ..expressions import (

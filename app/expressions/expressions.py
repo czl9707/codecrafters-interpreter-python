@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Iterator, Optional, Type, Union
 
+from ..utils import MissingExpressionError
+
 if TYPE_CHECKING:
     from ..tokens import Token
 
@@ -35,6 +37,9 @@ class Expression(ABC):
         prev_expr: Optional['Expression'], 
         iter: Iterator['Token']
     ) -> 'Expression':
+        if token.__class__ not in Expression._token2expression_map:
+            raise MissingExpressionError(-1, token)
+        
         return Expression._token2expression_map[token.__class__].from_token(token, prev_expr, iter)
     
     @classmethod

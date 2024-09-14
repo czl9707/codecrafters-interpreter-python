@@ -4,7 +4,7 @@ from typing import Iterator
 
 from .character_provider import CharacterProvider
 
-from .errors import BaseTokenizeError
+from ..utils import BaseError
 from .tokens import Token, EOFSymbol
 
 def config_tokenize_parser(arg_parser: ArgumentParser) -> None:
@@ -28,6 +28,10 @@ class Tokenizer:
         self.cp = CharacterProvider(s)
         self.error = False
     
+    @property
+    def line(self) -> int:
+        return self.cp.line
+    
     def __iter__(self) -> Iterator[Token]:
         while not self.cp.EOF:
             # print(self.cp.s[self.cp.index:])
@@ -36,7 +40,7 @@ class Tokenizer:
                 continue
             try:
                 yield Token.from_iter(self.cp)
-            except BaseTokenizeError as e:
+            except BaseError as e:
                 self.error = True
                 print(e, file=sys.stderr)
                 
