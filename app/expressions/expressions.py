@@ -234,6 +234,16 @@ class BangExpression(UnaryExpression):
         return not self.right.evaluate()
 
 
+class PrintExpression(UnaryExpression):
+    def evaluate(self) -> Any:
+        value = self.right.evaluate()
+        if isinstance(value, bool):
+            print(str(value).lower())
+        elif value is None:
+            print("nil")
+        else:
+            print(value)
+
 # *********************************************** Binary ***********************************************
 class PlusExpression(BinaryExpression):
     def evaluate(self) -> Any:        

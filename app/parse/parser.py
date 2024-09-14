@@ -1,9 +1,9 @@
 from argparse import ArgumentParser, Namespace
 import sys
-from typing import Optional
+from typing import Iterator, Optional
 
 from ..utils import ParserBaseError, RuntimeError
-from ..tokens import Tokenizer, EOFSymbol
+from ..tokens import Tokenizer, EOFSymbol, SemicolonSymbol
 from ..expressions import Expression
 
 
@@ -22,9 +22,8 @@ def print_parse_result(ns: Namespace) -> None:
         file_contents = fd.read()
     
     parser = Parser(file_contents)
-    expr = parser.get_expression()
-    if expr:
-        print(expr)
+    for expression in parser:
+        print(expression)
     
     if parser.error:
         exit(65)
@@ -34,10 +33,9 @@ def print_evalute_result(ns: Namespace) -> None:
         file_contents = fd.read()
     
     parser = Parser(file_contents)
-    expr = parser.get_expression()
     try:
-        if expr:
-            value = expr.evaluate()
+        for expression in parser:
+            value = expression.evaluate()
             if isinstance(value, bool):
                 print(str(value).lower())
             elif value is None:
@@ -61,7 +59,7 @@ class Parser:
     def error(self) -> bool:
         return self.self_error or self.tokenizer.error
     
-    def get_expression(self) -> Optional[Expression]:
+    def __iter__(self) -> Iterator[Expression]:
         token_iter = iter(self.tokenizer)
         expression: Optional[Expression] = None
     
@@ -69,11 +67,17 @@ class Parser:
             for token in token_iter:
                 if token.__class__ == EOFSymbol:
                     break
+                if token.__class__ == SemicolonSymbol:
+                    if expression:
+                        yield expression
+                    expression = None
+                    continue
+                
                 expression = Expression.from_token(token, expression, token_iter)
-            return expression
+            
+            if expression:
+                yield expression
         except ParserBaseError as e:
             e.line_num = self.tokenizer.line
             print(e, file=sys.stderr)
             self.self_error = True
-        
-        return None

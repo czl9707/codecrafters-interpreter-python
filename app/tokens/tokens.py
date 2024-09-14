@@ -15,6 +15,7 @@ from ..expressions import (
     
     MinusNegativeExpressionRouter,
     
+    PrintExpression,
     BangExpression,
     PlusExpression,
     DivideExpression,
@@ -327,6 +328,7 @@ class IfReservedWord(ReservedWord):
     token_type = "IF"
     lexeme = "if"
 
+@PrintExpression.register
 class PrintReservedWord(ReservedWord):
     token_type = "PRINT"
     lexeme = "print"
