@@ -1,4 +1,5 @@
 from argparse import ArgumentParser, Namespace
+import sys
 from typing import Optional
 
 from ..utils import ParserBaseError
@@ -14,18 +15,37 @@ def print_parse_result(ns: Namespace) -> None:
     with open(ns.file) as fd:
         file_contents = fd.read()
     
-    tokenizer = Tokenizer(file_contents)
-    token_iter = iter(tokenizer)
-    expression: Optional[Expression] = None
+    parser = Parser(file_contents)
+    expr = parser.get_expression()
+    if expr:
+        print(expr)
     
-    try:
-        for token in token_iter:
-            if token.__class__ == EOFSymbol:
-                break
-            expression = Expression.from_token(token, expression, token_iter)
-        print(expression)
-    except ParserBaseError as e:
-        e.line_num = tokenizer.line
-        print(e)
+    if parser.error:
         exit(65)
+
+
+class Parser:
+    def __init__(self, s:str) -> None:
+        self.tokenizer = Tokenizer(s)
+        self.self_error = False
     
+    @property
+    def error(self) -> bool:
+        return self.self_error or self.tokenizer.error
+    
+    def get_expression(self) -> Optional[Expression]:
+        token_iter = iter(self.tokenizer)
+        expression: Optional[Expression] = None
+    
+        try:
+            for token in token_iter:
+                if token.__class__ == EOFSymbol:
+                    break
+                expression = Expression.from_token(token, expression, token_iter)
+            return expression
+        except ParserBaseError as e:
+            e.line_num = self.tokenizer.line
+            print(e, file=sys.stderr)
+            self.self_error = True
+        
+        return None
