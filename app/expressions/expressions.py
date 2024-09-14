@@ -1,12 +1,23 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, Type, Union, cast
 
 from ..utils import MissingExpressionError, NoneNumberOperandError, UnMatchedOprendError
 
 if TYPE_CHECKING:
     from ..tokens import Token
 
+
+def precedence(pre: int) -> Callable[[Type['Expression']], Type['Expression']]:
+    def wrapped(cls: Type['Expression']) -> Type['Expression']:
+        cls._precedence = pre
+        return cls
+    
+    return wrapped
+
+
+@precedence(0)
 class Expression(ABC):
+    _precedence: int
     _token2expression_map: dict[Type['Token'], Type['Expression']] = {}
     
     @abstractmethod
@@ -48,7 +59,7 @@ class Expression(ABC):
         ...
     
     @classmethod
-    def register(cls: Type['Expression'], token_cls: Type['Token']):
+    def yield_from(cls: Type['Expression'], token_cls: Type['Token']):
         Expression._token2expression_map[token_cls] = cls
         return token_cls
 
@@ -166,9 +177,16 @@ class BinaryExpression(Expression, ABC):
         token: 'Token', 
         prev_expr: Optional['Expression'], 
         iter: Iterator['Token']
-    ) -> "BinaryExpression":
+    ) -> "Expression":
         if not prev_expr:
             raise MissingExpressionError(-1, token)
+        
+        if hasattr(prev_expr, "right"):
+            prev_expr = cast(Union['BinaryExpression', 'UnaryExpression'], prev_expr)
+            if prev_expr._precedence < cls._precedence:
+                _self = cls(token, prev_expr.right, iter)
+                prev_expr.right = _self
+                return prev_expr
         return cls(token, prev_expr, iter)
 
 
@@ -220,6 +238,7 @@ class NilLiteralExpression(LiteralExpression):
         return None
 
 # *********************************************** Unary ***********************************************
+@precedence(5)
 class NegativeExpression(UnaryExpression):
     def evaluate(self) -> Any:
         right_v = self.right.evaluate()
@@ -229,6 +248,7 @@ class NegativeExpression(UnaryExpression):
         return - right_v
 
 
+@precedence(5)
 class BangExpression(UnaryExpression):
     def evaluate(self) -> bool:        
         return not self.right.evaluate()
@@ -245,6 +265,7 @@ class PrintExpression(UnaryExpression):
             print(value)
 
 # *********************************************** Binary ***********************************************
+@precedence(3)
 class PlusExpression(BinaryExpression):
     def evaluate(self) -> Any:        
         left_v = self.left.evaluate()
@@ -263,8 +284,7 @@ class PlusExpression(BinaryExpression):
             raise NoneNumberOperandError()
         
 
-    
-    
+@precedence(3)
 class MinusExpression(BinaryExpression):
     def evaluate(self) -> Any:
         left_v = self.left.evaluate()
@@ -274,7 +294,8 @@ class MinusExpression(BinaryExpression):
         
         return left_v - right_v
     
-    
+
+@precedence(4)
 class DivideExpression(BinaryExpression):
     def evaluate(self) -> Any:
         left_v = self.left.evaluate()
@@ -287,6 +308,8 @@ class DivideExpression(BinaryExpression):
         else:
             return left_v // right_v
     
+    
+@precedence(4)
 class MultiplyExpression(BinaryExpression):
     def evaluate(self) -> Any:
         left_v = self.left.evaluate()
@@ -306,7 +329,8 @@ class OrExpression(BinaryExpression):
     def evaluate(self) -> bool:        
         return self.left.evaluate() or self.right.evaluate()
     
-    
+
+@precedence(1)
 class EqualEqualExpression(BinaryExpression):
     def evaluate(self) -> bool:
         left_v = self.left.evaluate()
@@ -314,6 +338,7 @@ class EqualEqualExpression(BinaryExpression):
         return left_v == right_v
 
 
+@precedence(1)
 class BangEqualExpression(BinaryExpression):
     def evaluate(self) -> bool:
         left_v = self.left.evaluate()
@@ -321,6 +346,7 @@ class BangEqualExpression(BinaryExpression):
         return left_v != right_v
 
 
+@precedence(2)
 class LessExpression(BinaryExpression):
     def evaluate(self) -> bool:
         left_v = self.left.evaluate()
@@ -329,7 +355,7 @@ class LessExpression(BinaryExpression):
             raise NoneNumberOperandError()
         return left_v < right_v
 
-
+@precedence(2)
 class LessEqualExpression(BinaryExpression):
     def evaluate(self) -> bool:
         left_v = self.left.evaluate()
@@ -339,6 +365,7 @@ class LessEqualExpression(BinaryExpression):
         return left_v <= right_v
 
 
+@precedence(2)
 class GreaterExpression(BinaryExpression):
     def evaluate(self) -> bool:
         left_v = self.left.evaluate()
@@ -348,6 +375,7 @@ class GreaterExpression(BinaryExpression):
         return left_v > right_v
 
 
+@precedence(2)
 class GreaterEqualExpression(BinaryExpression):
     def evaluate(self) -> bool:
         left_v = self.left.evaluate()

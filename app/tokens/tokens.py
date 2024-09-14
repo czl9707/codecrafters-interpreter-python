@@ -108,7 +108,7 @@ class Identifier(Token):
         return Identifier(s)
  
     
-@StringLiteralExpression.register
+@StringLiteralExpression.yield_from
 class StringLiteral(Token):
     token_type = "STRING"
     def __init__(self, value: str) -> None:
@@ -130,7 +130,7 @@ class StringLiteral(Token):
             return StringLiteral(s[:-1])
 
 
-@NumberLiteralExpression.register
+@NumberLiteralExpression.yield_from
 class NumberLiteral(Token):
     token_type = "NUMBER"
     def __init__(self, str_expression: str, value: Union[int, float]) -> None:
@@ -199,7 +199,7 @@ class RightBraceSymbol(Symbol):
     token_type = "RIGHT_BRACE"
     lexeme = "}"
 
-@GroupExpression.register
+@GroupExpression.yield_from
 class LeftParenthesisSymbol(Symbol):
     token_type = "LEFT_PAREN"
     lexeme = "("
@@ -208,7 +208,7 @@ class RightParenthesisSymbol(Symbol):
     token_type = "RIGHT_PAREN"
     lexeme = ")"
 
-@MultiplyExpression.register
+@MultiplyExpression.yield_from
 class StarSymbol(Symbol):
     token_type = "STAR"
     lexeme = "*" 
@@ -221,12 +221,12 @@ class CommaSymbol(Symbol):
     token_type = "COMMA"
     lexeme = "," 
 
-@PlusExpression.register
+@PlusExpression.yield_from
 class PlusSymbol(Symbol):
     token_type = "PLUS"
     lexeme = "+" 
 
-@MinusNegativeExpressionRouter.register
+@MinusNegativeExpressionRouter.yield_from
 class MinusSymbol(Symbol):
     token_type = "MINUS"
     lexeme = "-" 
@@ -235,7 +235,7 @@ class SemicolonSymbol(Symbol):
     token_type = "SEMICOLON"
     lexeme = ";" 
 
-@BangExpression.register
+@BangExpression.yield_from
 class BangSymbol(Symbol):
     token_type = "BANG"
     lexeme = "!"
@@ -244,37 +244,37 @@ class EqualSymbol(Symbol):
     token_type = "EQUAL"
     lexeme = "=" 
 
-@EqualEqualExpression.register
+@EqualEqualExpression.yield_from
 class EqualEqualSymbol(Symbol):
     token_type = "EQUAL_EQUAL"
     lexeme = "==" 
 
-@BangEqualExpression.register
+@BangEqualExpression.yield_from
 class BangEqualSymbol(Symbol):
     token_type = "BANG_EQUAL"
     lexeme = "!="
 
-@LessExpression.register
+@LessExpression.yield_from
 class LessSymbol(Symbol):
     token_type = "LESS"
     lexeme = "<"
 
-@LessEqualExpression.register
+@LessEqualExpression.yield_from
 class LessEqualSymbol(Symbol):
     token_type = "LESS_EQUAL"
     lexeme = "<="
 
-@GreaterExpression.register
+@GreaterExpression.yield_from
 class GreaterSymbol(Symbol):
     token_type = "GREATER"
     lexeme = ">"
 
-@GreaterEqualExpression.register
+@GreaterEqualExpression.yield_from
 class GreaterEqualSymbol(Symbol):
     token_type = "GREATER_EQUAL"
     lexeme = ">="
 
-@DivideExpression.register
+@DivideExpression.yield_from
 class SlashSymbol(Symbol):
     token_type = "SLASH"
     lexeme = "/"
@@ -283,12 +283,12 @@ class EOFSymbol(Symbol):
     token_type = "EOF"
     lexeme = ""
 
-@AndExpression.register
+@AndExpression.yield_from
 class AndReservedWord(ReservedWord):
     token_type = "AND"
     lexeme = "and"
 
-@OrExpression.register
+@OrExpression.yield_from
 class OrReservedWord(ReservedWord):
     token_type = "OR"
     lexeme = "or"
@@ -301,17 +301,17 @@ class ElseReservedWord(ReservedWord):
     token_type = "ELSE"
     lexeme = "else"
 
-@BooleanLiteralExpression.register
+@BooleanLiteralExpression.yield_from
 class FalseReservedWord(ReservedWord):
     token_type = "FALSE"
     lexeme = "false"
 
-@BooleanLiteralExpression.register
+@BooleanLiteralExpression.yield_from
 class TrueReservedWord(ReservedWord):
     token_type = "TRUE"
     lexeme = "true"
 
-@NilLiteralExpression.register
+@NilLiteralExpression.yield_from
 class NilReservedWord(ReservedWord):
     token_type = "NIL"
     lexeme = "nil"
@@ -328,7 +328,7 @@ class IfReservedWord(ReservedWord):
     token_type = "IF"
     lexeme = "if"
 
-@PrintExpression.register
+@PrintExpression.yield_from
 class PrintReservedWord(ReservedWord):
     token_type = "PRINT"
     lexeme = "print"
