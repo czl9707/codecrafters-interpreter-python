@@ -191,7 +191,7 @@ class StringLiteralExpression(LiteralExpression):
         return self.value.literal
         
     def evaluate(self) -> str:
-        return self.value.lexeme
+        return self.value.literal
        
         
 class NumberLiteralExpression(LiteralExpression):
