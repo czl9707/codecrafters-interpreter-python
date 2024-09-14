@@ -196,11 +196,11 @@ class MinusNegativeExpressionRouter(Expression, ABC):
         token: 'Token', 
         prev_expr: Optional['Expression'], 
         iter: Iterator['Token']
-    ) -> Union['MinusExpression', 'NegativeExpression']:
+    ) -> 'Expression':
         if prev_expr is None:
-            return NegativeExpression(token, None, iter)
+            return NegativeExpression.from_token(token, None, iter)
         else:
-            return MinusExpression(token, prev_expr, iter)
+            return MinusExpression.from_token(token, prev_expr, iter)
         
 
 # *********************************************** Literal ***********************************************

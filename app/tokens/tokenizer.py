@@ -34,7 +34,7 @@ class Tokenizer:
     
     def __iter__(self) -> Iterator[Token]:
         while not self.cp.EOF:
-            # print(self.cp.s[self.cp.index:])
+            # print("DEBUG: " self.cp.s[self.cp.index:])
             
             if self.__forward_until_next_valid():
                 continue

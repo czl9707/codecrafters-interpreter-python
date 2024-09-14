@@ -65,10 +65,13 @@ class Parser:
     
         try:
             for token in token_iter:
+                # print("DEBUG: " + str(token))
+
                 if token.__class__ == EOFSymbol:
                     break
                 if token.__class__ == SemicolonSymbol:
                     if expression:
+                        # print("DEBUG: " + str(expression))
                         yield expression
                     expression = None
                     continue
