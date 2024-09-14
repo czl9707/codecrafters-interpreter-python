@@ -301,14 +301,14 @@ class EqualEqualExpression(BinaryExpression):
     def evaluate(self) -> bool:
         left_v = self.left.evaluate()
         right_v = self.right.evaluate()
-        return left_v == left_v
+        return left_v == right_v
 
 
 class BangEqualExpression(BinaryExpression):
     def evaluate(self) -> bool:
         left_v = self.left.evaluate()
         right_v = self.right.evaluate()
-        return left_v != left_v
+        return left_v != right_v
 
 
 class LessExpression(BinaryExpression):
@@ -317,7 +317,7 @@ class LessExpression(BinaryExpression):
         right_v = self.right.evaluate()
         if not _is_number(left_v) or not _is_number(right_v):
             raise NoneNumberOperandError()
-        return left_v < left_v
+        return left_v < right_v
 
 
 class LessEqualExpression(BinaryExpression):
@@ -326,7 +326,7 @@ class LessEqualExpression(BinaryExpression):
         right_v = self.right.evaluate()
         if not _is_number(left_v) or not _is_number(right_v):
             raise NoneNumberOperandError()
-        return left_v <= left_v
+        return left_v <= right_v
 
 
 class GreaterExpression(BinaryExpression):
@@ -335,7 +335,7 @@ class GreaterExpression(BinaryExpression):
         right_v = self.right.evaluate()
         if not _is_number(left_v) or not _is_number(right_v):
             raise NoneNumberOperandError()
-        return left_v > left_v
+        return left_v > right_v
 
 
 class GreaterEqualExpression(BinaryExpression):
@@ -344,7 +344,7 @@ class GreaterEqualExpression(BinaryExpression):
         right_v = self.right.evaluate()
         if not _is_number(left_v) or not _is_number(right_v):
             raise NoneNumberOperandError()
-        return left_v >= left_v
+        return left_v >= right_v
 
 
 
