@@ -153,7 +153,7 @@ class BinaryExpression(Expression):
         iter: Iterator['Token']
     ) -> "BinaryExpression":
         if not prev_expr:
-            raise MissingExpressionError(token)
+            raise MissingExpressionError(-1, token)
         return BinaryExpression(token, prev_expr, iter)
 
 
