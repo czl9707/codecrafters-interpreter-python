@@ -107,7 +107,7 @@ class StringLiteral(Token):
         line_num = cp.line
         s = cp.forward_until("\"")
         if s[-1] != "\"":
-            raise UnterminatedStringError(line_num, None)
+            raise UnterminatedStringError(line_num)
         
         else:
             return StringLiteral(s[:-1])
