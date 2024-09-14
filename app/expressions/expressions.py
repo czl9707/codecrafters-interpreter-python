@@ -301,8 +301,6 @@ class EqualEqualExpression(BinaryExpression):
     def evaluate(self) -> bool:
         left_v = self.left.evaluate()
         right_v = self.right.evaluate()
-        if not _is_number(left_v) or not _is_number(right_v):
-            raise NoneNumberOperandError()
         return left_v == left_v
 
 
@@ -310,8 +308,6 @@ class BangEqualExpression(BinaryExpression):
     def evaluate(self) -> bool:
         left_v = self.left.evaluate()
         right_v = self.right.evaluate()
-        if not _is_number(left_v) or not _is_number(right_v):
-            raise NoneNumberOperandError()
         return left_v != left_v
 
 
