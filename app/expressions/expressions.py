@@ -226,7 +226,7 @@ class NegativeExpression(UnaryExpression):
         if not _is_number(right_v):
             raise NoneNumberOperandError()
 
-        return - self.right.evaluate()
+        return - right_v
 
 
 class BangExpression(UnaryExpression):
@@ -353,8 +353,8 @@ class GreaterEqualExpression(BinaryExpression):
 
 
 # *********************************************** Util ***********************************************
-def _is_number(obj):
-    return isinstance(obj, int) or isinstance(obj, float)
+def _is_number(obj: Any):
+    return obj.__class__ == int or obj.__class__ == float
 
-def _is_string(obj):
-    return isinstance(obj, str)
+def _is_string(obj: Any):
+    return obj.__class__ == str
