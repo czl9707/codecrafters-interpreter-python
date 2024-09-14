@@ -2,6 +2,7 @@ from argparse import ArgumentParser, Namespace
 import sys
 
 from ..parse import Parser
+from ..utils import RuntimeError
 
 
 def config_execute_parser(arg_parser: ArgumentParser) -> None:
