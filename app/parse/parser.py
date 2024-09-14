@@ -2,7 +2,7 @@ from argparse import ArgumentParser, Namespace
 import sys
 from typing import Optional
 
-from ..utils import ParserBaseError
+from ..utils import ParserBaseError, RuntimeError
 from ..tokens import Tokenizer, EOFSymbol
 from ..expressions import Expression
 
@@ -44,7 +44,8 @@ def print_evalute_result(ns: Namespace) -> None:
                 print("nil")
             else:
                 print(value)
-    except:
+    except RuntimeError as e:
+        print(e, file=sys.stderr)
         exit(65)
     
     if parser.error:

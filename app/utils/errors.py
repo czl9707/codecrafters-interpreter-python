@@ -45,3 +45,19 @@ class ParserBaseError(BaseError, ABC):
 class MissingExpressionError(ParserBaseError):
     def __str__(self) -> str:
         return super().__str__() + "Expect expression."
+    
+
+class RuntimeError(BaseError, ABC):
+    msg: str
+    def __init__(self) -> None:
+        super().__init__(1)
+    
+    def __str__(self) -> str:
+        return self.msg + "\n" + super().__str__()
+    
+
+class NoneNumberOperandError(RuntimeError):
+    msg = "Operands must be numbers."
+    
+class UnMatchedOprendError(RuntimeError):
+    msg = "Operands must be two numbers or two strings."

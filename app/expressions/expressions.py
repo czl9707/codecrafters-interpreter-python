@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Iterator, Optional, Type, Union
 
-from ..utils import MissingExpressionError
+from ..utils import MissingExpressionError, NoneNumberOperandError, UnMatchedOprendError
 
 if TYPE_CHECKING:
     from ..tokens import Token
@@ -222,6 +222,10 @@ class NilLiteralExpression(LiteralExpression):
 # *********************************************** Unary ***********************************************
 class NegativeExpression(UnaryExpression):
     def evaluate(self) -> Any:
+        right_v = self.right.evaluate()
+        if not _is_number(right_v):
+            raise NoneNumberOperandError()
+
         return - self.right.evaluate()
 
 
@@ -233,18 +237,41 @@ class BangExpression(UnaryExpression):
 # *********************************************** Binary ***********************************************
 class PlusExpression(BinaryExpression):
     def evaluate(self) -> Any:        
-        return self.left.evaluate() + self.right.evaluate() 
+        left_v = self.left.evaluate()
+        right_v = self.right.evaluate()
+        if isinstance(left_v, str) and isinstance(right_v, str):
+            return left_v + right_v
+        if _is_number(left_v) and _is_number(right_v):
+            return left_v + right_v
+        
+        if (
+            (_is_string(left_v) or _is_number(left_v)) and
+            (_is_string(right_v) or _is_number(right_v))
+        ):
+            raise UnMatchedOprendError()
+        else:
+            raise NoneNumberOperandError()
+        
+
     
     
 class MinusExpression(BinaryExpression):
-    def evaluate(self) -> Any:        
-        return self.left.evaluate() - self.right.evaluate() 
+    def evaluate(self) -> Any:
+        left_v = self.left.evaluate()
+        right_v = self.right.evaluate()
+        if not _is_number(left_v) or not _is_number(right_v):
+            raise NoneNumberOperandError()
+        
+        return left_v - right_v
     
     
 class DivideExpression(BinaryExpression):
     def evaluate(self) -> Any:
         left_v = self.left.evaluate()
         right_v = self.right.evaluate()
+        if not _is_number(left_v) or not _is_number(right_v):
+            raise NoneNumberOperandError()
+        
         if left_v % right_v:
             return left_v / right_v
         else:
@@ -252,7 +279,12 @@ class DivideExpression(BinaryExpression):
     
 class MultiplyExpression(BinaryExpression):
     def evaluate(self) -> Any:
-        return self.left.evaluate() * self.right.evaluate() 
+        left_v = self.left.evaluate()
+        right_v = self.right.evaluate()
+        if not _is_number(left_v) or not _is_number(right_v):
+            raise NoneNumberOperandError()
+        
+        return left_v * right_v 
     
 
 class AndExpression(BinaryExpression):
@@ -267,30 +299,62 @@ class OrExpression(BinaryExpression):
     
 class EqualEqualExpression(BinaryExpression):
     def evaluate(self) -> bool:
-        return self.left.evaluate() == self.right.evaluate()
+        left_v = self.left.evaluate()
+        right_v = self.right.evaluate()
+        if not _is_number(left_v) or not _is_number(right_v):
+            raise NoneNumberOperandError()
+        return left_v == left_v
 
 
 class BangEqualExpression(BinaryExpression):
     def evaluate(self) -> bool:
-        return self.left.evaluate() != self.right.evaluate()
+        left_v = self.left.evaluate()
+        right_v = self.right.evaluate()
+        if not _is_number(left_v) or not _is_number(right_v):
+            raise NoneNumberOperandError()
+        return left_v != left_v
 
 
 class LessExpression(BinaryExpression):
     def evaluate(self) -> bool:
-        return self.left.evaluate() < self.right.evaluate()
+        left_v = self.left.evaluate()
+        right_v = self.right.evaluate()
+        if not _is_number(left_v) or not _is_number(right_v):
+            raise NoneNumberOperandError()
+        return left_v < left_v
 
 
 class LessEqualExpression(BinaryExpression):
     def evaluate(self) -> bool:
-        return self.left.evaluate() <= self.right.evaluate()
+        left_v = self.left.evaluate()
+        right_v = self.right.evaluate()
+        if not _is_number(left_v) or not _is_number(right_v):
+            raise NoneNumberOperandError()
+        return left_v <= left_v
 
 
 class GreaterExpression(BinaryExpression):
     def evaluate(self) -> bool:
-        return self.left.evaluate() > self.right.evaluate()
+        left_v = self.left.evaluate()
+        right_v = self.right.evaluate()
+        if not _is_number(left_v) or not _is_number(right_v):
+            raise NoneNumberOperandError()
+        return left_v > left_v
 
 
 class GreaterEqualExpression(BinaryExpression):
     def evaluate(self) -> bool:
-        return self.left.evaluate() >= self.right.evaluate()
+        left_v = self.left.evaluate()
+        right_v = self.right.evaluate()
+        if not _is_number(left_v) or not _is_number(right_v):
+            raise NoneNumberOperandError()
+        return left_v >= left_v
 
+
+
+# *********************************************** Util ***********************************************
+def _is_number(obj):
+    return isinstance(obj, int) or isinstance(obj, float)
+
+def _is_string(obj):
+    return isinstance(obj, str)
