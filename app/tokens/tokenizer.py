@@ -4,7 +4,7 @@ from typing import Iterator
 
 from .character_provider import CharacterProvider
 
-from ..utils import BaseError
+from ..utils import TokenizerBaseError
 from .tokens import Token, EOFSymbol
 
 def config_tokenize_parser(arg_parser: ArgumentParser) -> None:
@@ -40,7 +40,7 @@ class Tokenizer:
                 continue
             try:
                 yield Token.from_iter(self.cp)
-            except BaseError as e:
+            except TokenizerBaseError as e:
                 self.error = True
                 print(e, file=sys.stderr)
                 
