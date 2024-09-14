@@ -242,12 +242,16 @@ class MinusExpression(BinaryExpression):
     
     
 class DivideExpression(BinaryExpression):
-    def evaluate(self) -> Any:        
-        return self.left.evaluate() / self.right.evaluate() 
-    
+    def evaluate(self) -> Any:
+        left_v = self.left.evaluate()
+        right_v = self.right.evaluate()
+        if left_v % right_v:
+            return left_v / right_v
+        else:
+            return left_v // right_v
     
 class MultiplyExpression(BinaryExpression):
-    def evaluate(self) -> Any:        
+    def evaluate(self) -> Any:
         return self.left.evaluate() * self.right.evaluate() 
     
 
