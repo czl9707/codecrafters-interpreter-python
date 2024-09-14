@@ -46,7 +46,7 @@ def print_evalute_result(ns: Namespace) -> None:
                 print(value)
     except RuntimeError as e:
         print(e, file=sys.stderr)
-        exit(65)
+        exit(70)
     
     if parser.error:
         exit(65)
