@@ -6,11 +6,27 @@ from ..utils import UnexpectedCharacterError, UnterminatedStringError
 from .character_provider import CharacterProvider
 
 from ..expressions import (
-    LiteralExpression, 
     GroupExpression, 
-    BinaryExpression, 
-    UnaryExpression,
-    UnaryBinaryExpressionRouter, 
+    
+    StringLiteralExpression,    
+    NumberLiteralExpression,
+    BooleanLiteralExpression,
+    NilLiteralExpression,
+    
+    MinusNegativeExpressionRouter,
+    
+    BangExpression,
+    PlusExpression,
+    DivideExpression,
+    MultiplyExpression,
+    AndExpression,
+    OrExpression,
+    EqualEqualExpression,
+    BangEqualExpression,
+    LessExpression,
+    LessEqualExpression,
+    GreaterExpression,
+    GreaterEqualExpression,
 )
     
 
@@ -91,7 +107,7 @@ class Identifier(Token):
         return Identifier(s)
  
     
-@LiteralExpression.register
+@StringLiteralExpression.register
 class StringLiteral(Token):
     token_type = "STRING"
     def __init__(self, value: str) -> None:
@@ -113,7 +129,7 @@ class StringLiteral(Token):
             return StringLiteral(s[:-1])
 
 
-@LiteralExpression.register
+@NumberLiteralExpression.register
 class NumberLiteral(Token):
     token_type = "NUMBER"
     def __init__(self, str_expression: str, value: Union[int, float]) -> None:
@@ -191,7 +207,7 @@ class RightParenthesisSymbol(Symbol):
     token_type = "RIGHT_PAREN"
     lexeme = ")"
 
-@BinaryExpression.register
+@MultiplyExpression.register
 class StarSymbol(Symbol):
     token_type = "STAR"
     lexeme = "*" 
@@ -204,12 +220,12 @@ class CommaSymbol(Symbol):
     token_type = "COMMA"
     lexeme = "," 
 
-@BinaryExpression.register
+@PlusExpression.register
 class PlusSymbol(Symbol):
     token_type = "PLUS"
     lexeme = "+" 
 
-@UnaryBinaryExpressionRouter.register
+@MinusNegativeExpressionRouter.register
 class MinusSymbol(Symbol):
     token_type = "MINUS"
     lexeme = "-" 
@@ -218,47 +234,46 @@ class SemicolonSymbol(Symbol):
     token_type = "SEMICOLON"
     lexeme = ";" 
 
-@BinaryExpression.register
-class EqualSymbol(Symbol):
-    token_type = "EQUAL"
-    lexeme = "=" 
-
-@BinaryExpression.register
-class EqualEqualSymbol(Symbol):
-    token_type = "EQUAL_EQUAL"
-    lexeme = "==" 
-
-@UnaryExpression.register
+@BangExpression.register
 class BangSymbol(Symbol):
     token_type = "BANG"
     lexeme = "!"
 
-@BinaryExpression.register
+class EqualSymbol(Symbol):
+    token_type = "EQUAL"
+    lexeme = "=" 
+
+@EqualEqualExpression.register
+class EqualEqualSymbol(Symbol):
+    token_type = "EQUAL_EQUAL"
+    lexeme = "==" 
+
+@BangEqualExpression.register
 class BangEqualSymbol(Symbol):
     token_type = "BANG_EQUAL"
     lexeme = "!="
 
-@BinaryExpression.register
+@LessExpression.register
 class LessSymbol(Symbol):
     token_type = "LESS"
     lexeme = "<"
 
-@BinaryExpression.register
+@LessEqualExpression.register
 class LessEqualSymbol(Symbol):
     token_type = "LESS_EQUAL"
     lexeme = "<="
 
-@BinaryExpression.register
+@GreaterExpression.register
 class GreaterSymbol(Symbol):
     token_type = "GREATER"
     lexeme = ">"
 
-@BinaryExpression.register
+@GreaterEqualExpression.register
 class GreaterEqualSymbol(Symbol):
     token_type = "GREATER_EQUAL"
     lexeme = ">="
 
-@BinaryExpression.register
+@DivideExpression.register
 class SlashSymbol(Symbol):
     token_type = "SLASH"
     lexeme = "/"
@@ -267,10 +282,15 @@ class EOFSymbol(Symbol):
     token_type = "EOF"
     lexeme = ""
 
-@BinaryExpression.register
+@AndExpression.register
 class AndReservedWord(ReservedWord):
     token_type = "AND"
     lexeme = "and"
+
+@OrExpression.register
+class OrReservedWord(ReservedWord):
+    token_type = "OR"
+    lexeme = "or"
 
 class ClassReservedWord(ReservedWord):
     token_type = "CLASS"
@@ -280,17 +300,17 @@ class ElseReservedWord(ReservedWord):
     token_type = "ELSE"
     lexeme = "else"
 
-@LiteralExpression.register
+@BooleanLiteralExpression.register
 class FalseReservedWord(ReservedWord):
     token_type = "FALSE"
     lexeme = "false"
 
-@LiteralExpression.register
+@BooleanLiteralExpression.register
 class TrueReservedWord(ReservedWord):
     token_type = "TRUE"
     lexeme = "true"
 
-@LiteralExpression.register
+@NilLiteralExpression.register
 class NilReservedWord(ReservedWord):
     token_type = "NIL"
     lexeme = "nil"
@@ -306,11 +326,6 @@ class FunReservedWord(ReservedWord):
 class IfReservedWord(ReservedWord):
     token_type = "IF"
     lexeme = "if"
-
-@BinaryExpression.register
-class OrReservedWord(ReservedWord):
-    token_type = "OR"
-    lexeme = "or"
 
 class PrintReservedWord(ReservedWord):
     token_type = "PRINT"

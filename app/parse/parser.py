@@ -11,6 +11,12 @@ def config_parse_parser(arg_parser: ArgumentParser) -> None:
     arg_parser.add_argument("file")
     arg_parser.set_defaults(entry=print_parse_result)
     
+    
+def config_evaluate_parser(arg_parser: ArgumentParser) -> None:
+    arg_parser.add_argument("file")
+    arg_parser.set_defaults(entry=print_evalute_result)
+    
+    
 def print_parse_result(ns: Namespace) -> None:
     with open(ns.file) as fd:
         file_contents = fd.read()
@@ -19,6 +25,27 @@ def print_parse_result(ns: Namespace) -> None:
     expr = parser.get_expression()
     if expr:
         print(expr)
+    
+    if parser.error:
+        exit(65)
+
+def print_evalute_result(ns: Namespace) -> None:
+    with open(ns.file) as fd:
+        file_contents = fd.read()
+    
+    parser = Parser(file_contents)
+    expr = parser.get_expression()
+    try:
+        if expr:
+            value = expr.evaluate()
+            if isinstance(value, bool):
+                print(str(value).lower())
+            elif value is None:
+                print("nil")
+            else:
+                print(value)
+    except:
+        exit(65)
     
     if parser.error:
         exit(65)
