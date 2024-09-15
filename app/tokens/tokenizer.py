@@ -1,4 +1,3 @@
-from argparse import ArgumentParser, Namespace
 import sys
 from typing import Iterator
 
@@ -6,21 +5,6 @@ from .character_provider import CharacterProvider
 
 from ..utils import TokenizerBaseError
 from .tokens import Token, EOFSymbol
-
-def config_tokenize_parser(arg_parser: ArgumentParser) -> None:
-    arg_parser.add_argument("file")
-    arg_parser.set_defaults(entry=print_tokens)
-
-def print_tokens(ns: Namespace) -> None:
-    with open(ns.file) as fd:
-        file_contents = fd.read()
-    
-    tokenized = Tokenizer(file_contents)
-    for token in tokenized:
-        print(token)
-    
-    if tokenized.error:
-        exit(65)
 
 
 class Tokenizer:

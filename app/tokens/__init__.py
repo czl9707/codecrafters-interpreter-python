@@ -1,8 +1,7 @@
-from .tokenizer import config_tokenize_parser, Tokenizer 
+from .tokenizer import Tokenizer 
 from .tokens import *
 
 __all__=[
-    config_tokenize_parser.__name__,
     Tokenizer.__name__,
     Token.__name__,
     Identifier.__name__,

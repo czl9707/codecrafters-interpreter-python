@@ -61,3 +61,7 @@ class NoneNumberOperandError(RuntimeError):
     
 class UnMatchedOprendError(RuntimeError):
     msg = "Operands must be two numbers or two strings."
+    
+class UndefinedVariableError(RuntimeError):
+    def __init__(self, name: str) -> None:
+        self.msg = f"Undefined variable '{name}'."

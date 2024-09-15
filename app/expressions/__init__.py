@@ -28,6 +28,10 @@ __all__ = [
     LessEqualExpression.__name__,
     GreaterExpression.__name__,
     GreaterEqualExpression.__name__,
+    
+    VarExpression.__name__,
+    IdentifierExpression.__name__,
+    AssignExpression.__name__,
 ]
 
 

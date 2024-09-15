@@ -1,6 +1,7 @@
-from .execute import config_execute_parser
+from .execution_context import ExceutionScope, Variable
 
 
 __all__ = [
-    config_execute_parser.__name__
+    ExceutionScope.__name__,
+    Variable.__name__,
 ]

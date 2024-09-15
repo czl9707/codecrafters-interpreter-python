@@ -1,6 +1,6 @@
 
 from abc import ABC
-from typing import Type, Union
+from typing import Type, Union, cast
 
 from ..utils import UnexpectedCharacterError, UnterminatedStringError
 from .character_provider import CharacterProvider
@@ -28,6 +28,10 @@ from ..expressions import (
     LessEqualExpression,
     GreaterExpression,
     GreaterEqualExpression,
+    
+    VarExpression,
+    IdentifierExpression,
+    AssignExpression,
 )
     
 
@@ -84,7 +88,13 @@ class Token(ABC):
     def __str__(self) -> str:
         return f"{self.token_type} {self.lexeme} {self.literal}"
 
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Token):
+            return False
+        return self.lexeme == cast(Token, value).lexeme
 
+
+@IdentifierExpression.yield_from
 class Identifier(Token):
     token_type = "IDENTIFIER"
     literal = "null"
@@ -240,6 +250,7 @@ class BangSymbol(Symbol):
     token_type = "BANG"
     lexeme = "!"
 
+@AssignExpression.yield_from
 class EqualSymbol(Symbol):
     token_type = "EQUAL"
     lexeme = "=" 
@@ -345,6 +356,7 @@ class ThisReservedWord(ReservedWord):
     token_type = "THIS"
     lexeme = "this"
 
+@VarExpression.yield_from
 class VarReservedWord(ReservedWord):
     token_type = "VAR"
     lexeme = "var"
