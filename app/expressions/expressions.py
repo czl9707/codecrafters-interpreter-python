@@ -212,38 +212,53 @@ class BinaryExpression(Expression, ABC):
         if not prev_expr:
             raise MissingExpressionError(-1, token)
         
-        if hasattr(prev_expr, "right"):
-            prev_expr = cast(Union['BinaryExpression', 'UnaryExpression'], prev_expr)
-            if prev_expr._precedence < cls._precedence:
-                _self = cls(token, prev_expr.right, iter)
-                prev_expr.right = _self
-                return prev_expr
+        right_most = BinaryExpression.__rightest_binary_unary(prev_expr)
+        if (
+            right_most and (
+                (right_most._precedence < cls._precedence) or
+                (right_most.operator == token and cls == AssignExpression)
+            )
+        ):
+            _self = cls(token, right_most.right, iter)
+            right_most.right = _self
+            return prev_expr
+
         return cls(token, prev_expr, iter)
 
-
-class RightAssocBinaryExpression(BinaryExpression, ABC):
-    @classmethod
-    def from_token(
-        cls: Type['RightAssocBinaryExpression'],
-        token: 'Token', 
-        prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
-    ) -> "Expression":
-        if not prev_expr:
-            raise MissingExpressionError(-1, token)
-        
-        second_rightest: Optional[RightAssocBinaryExpression] = None
-        rightest = prev_expr
-        while hasattr(rightest, "right") and cast(BinaryExpression, prev_expr).operator == token:
-            second_rightest = cast(RightAssocBinaryExpression, rightest)
+    @staticmethod
+    def __rightest_binary_unary(expr: Expression) -> Optional['BinaryExpression']:
+        second_rightest: Optional[BinaryExpression] = None
+        rightest = expr
+        while hasattr(rightest, "right"):
+            second_rightest = cast(BinaryExpression, rightest)
             rightest = second_rightest.right
+        
+        return second_rightest
 
-        if hasattr(rightest, "right") or second_rightest.__class__ != cls:
-            return super(RightAssocBinaryExpression, cls).from_token(token, prev_expr, iter)
-        else:
-            _self = cls(token, rightest, iter)
-            cast(RightAssocBinaryExpression, second_rightest).right = _self
-            return prev_expr
+
+# class RightAssocBinaryExpression(BinaryExpression, ABC):
+#     @classmethod
+#     def from_token(
+#         cls: Type['RightAssocBinaryExpression'],
+#         token: 'Token', 
+#         prev_expr: Optional['Expression'], 
+#         iter: Iterator['Token']
+#     ) -> "Expression":
+#         if not prev_expr:
+#             raise MissingExpressionError(-1, token)
+        
+#         second_rightest: Optional[RightAssocBinaryExpression] = None
+#         rightest = prev_expr
+#         while hasattr(rightest, "right") and cast(BinaryExpression, prev_expr).operator == token:
+#             second_rightest = cast(RightAssocBinaryExpression, rightest)
+#             rightest = second_rightest.right
+
+#         if hasattr(rightest, "right") or second_rightest.__class__ != cls:
+#             return super(RightAssocBinaryExpression, cls).from_token(token, prev_expr, iter)
+#         else:
+#             _self = cls(token, rightest, iter)
+#             cast(RightAssocBinaryExpression, second_rightest).right = _self
+#             return prev_expr
         
 
 # *********************************************** Literal ***********************************************
@@ -322,7 +337,7 @@ class VarExpression(UnaryExpression):
         
         
 # *********************************************** Binary ***********************************************
-# @precedence(3)
+@precedence(3)
 class PlusExpression(BinaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> Any:        
         left_v = self.left.evaluate(scope)
@@ -341,7 +356,7 @@ class PlusExpression(BinaryExpression):
             raise NoneNumberOperandError()
         
 
-# @precedence(3)
+@precedence(3)
 class MinusExpression(BinaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> Any:
         left_v = self.left.evaluate(scope)
@@ -352,7 +367,8 @@ class MinusExpression(BinaryExpression):
         return left_v - right_v
     
 
-# @precedence(4)
+# @precedence(3)
+@precedence(4)
 class DivideExpression(BinaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> Any:
         left_v = self.left.evaluate(scope)
@@ -366,7 +382,8 @@ class DivideExpression(BinaryExpression):
             return left_v // right_v
     
     
-# @precedence(4)
+# @precedence(3)
+@precedence(4)
 class MultiplyExpression(BinaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> Any:
         left_v = self.left.evaluate(scope)
@@ -442,7 +459,7 @@ class GreaterEqualExpression(BinaryExpression):
         return left_v >= right_v
 
 
-class AssignExpression(RightAssocBinaryExpression):
+class AssignExpression(BinaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> None:
         assert (
             isinstance(self.left, IdentifierExpression) or 
