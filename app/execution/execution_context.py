@@ -38,8 +38,8 @@ class ExecutionScope:
     def fetch_variable(self, name: str) -> 'Variable':
         scope: Optional['ExecutionScope'] = self
         while scope:
-            if name in self._variables:
-                return self._variables[name]
+            if name in scope._variables:
+                return scope._variables[name]
             scope = scope.parent
             
         raise UndefinedVariableError(name)
@@ -62,3 +62,5 @@ class Variable:
         else:
             return self.name == cast('Variable', value).name
     
+    def __str__(self) -> str:
+        return f"{self.name}: {self.value}"
