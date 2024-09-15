@@ -252,7 +252,10 @@ class BinaryExpression(Expression, ABC):
             return cls(token, current, iter)
 
         right_node = cls.__insert_self_node(token, current.right, iter)
-        if current.__class__ == right_node.__class__ and current._right_associative:
+        if (
+            (current.__class__ == right_node.__class__ and current._right_associative) or
+            (right_node._precedence > current._precedence)
+        ):
             current.right = right_node
             return current    
         else:
