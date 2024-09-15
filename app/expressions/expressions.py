@@ -16,17 +16,19 @@ def precedence(pre: int) -> Callable[[Type['Expression']], Type['Expression']]:
     return wrapped
 
 
-def statement(is_statement: bool = True) -> Callable[[Type['Expression']], Type['Expression']]:
-    def wrapped(cls: Type['Expression']) -> Type['Expression']:
-        cls._statement = is_statement
-        return cls
+def statement(cls: Type['Expression']) -> Type['Expression']:
+    cls._statement = True
+    return cls
     
-    return wrapped
+def right_associative(cls: Type['Expression']) -> Type['Expression']:
+    cls._right_associative = True
+    return cls
 
 @precedence(0)
 class Expression(ABC):
     _precedence: int
     _statement: bool = False
+    _right_associative: bool = False
     _token2expression_map: dict[Type['Token'], Type['Expression']] = {}
     
     @abstractmethod
@@ -189,7 +191,7 @@ class UnaryExpression(Expression, ABC):
         iter: Iterator['Token']
     ) -> "Expression":
         if prev_expr:        
-            right_most = UnaryExpression.__rightest_binary_unary(prev_expr)
+            right_most = UnaryExpression.__rightest_unary(prev_expr)
             if right_most and right_most.operator == token:
                 _self = cls(token, right_most.right, iter)
                 right_most.right = _self
@@ -198,14 +200,14 @@ class UnaryExpression(Expression, ABC):
         return cls(token, prev_expr, iter)
 
     @staticmethod
-    def __rightest_binary_unary(expr: Expression) -> Optional['BinaryExpression']:
-        second_rightest: Optional[BinaryExpression] = None
+    def __rightest_unary(expr: Expression) -> Optional['UnaryExpression']:
+        second_rightest: Optional[Union[UnaryExpression, BinaryExpression]] = None
         rightest = expr
         while hasattr(rightest, "right"):
-            second_rightest = cast(BinaryExpression, rightest)
+            second_rightest = cast(Union[UnaryExpression, BinaryExpression], rightest)
             rightest = second_rightest.right
         
-        return second_rightest
+        return second_rightest if (second_rightest and isinstance(second_rightest, UnaryExpression)) else None
     
 
 class BinaryExpression(Expression, ABC):
@@ -237,32 +239,29 @@ class BinaryExpression(Expression, ABC):
         if not prev_expr:
             raise MissingExpressionError(-1, token)
         
-        right_most = BinaryExpression.__rightest_binary_unary(prev_expr)
-        if (
-            right_most and (
-                (right_most._precedence < cls._precedence) or
-                (right_most.operator == token and cls == AssignExpression)
-            )
-        ):
-            _self = cls(token, right_most.right, iter)
-            right_most.right = _self
-            return prev_expr
+        return cls.__insert_self_node(token, prev_expr, iter)
 
-        return cls(token, prev_expr, iter)
+    @classmethod
+    def __insert_self_node(
+        cls: Type['BinaryExpression'],
+        token: 'Token', 
+        current: 'Expression', 
+        iter: Iterator['Token']
+    ) -> "Expression":
+        if not hasattr(current, "right") or current._precedence > cls._precedence:
+            return cls(token, current, iter)
 
-    @staticmethod
-    def __rightest_binary_unary(expr: Expression) -> Optional['BinaryExpression']:
-        second_rightest: Optional[BinaryExpression] = None
-        rightest = expr
-        while hasattr(rightest, "right"):
-            second_rightest = cast(BinaryExpression, rightest)
-            rightest = second_rightest.right
-        
-        return second_rightest
-
-
-class StatementExpression(UnaryExpression):
-    ...
+        right_node = cls.__insert_self_node(token, current.right, iter)
+        if current.__class__ == right_node.__class__ and not current._right_associative:
+            assert isinstance(right_node, BinaryExpression)
+            temp = current.right
+            current.right = right_node.left
+            right_node.left = temp
+                        
+            return right_node
+        else:
+            current.right = right_node
+            return current    
 
 # *********************************************** Literal ***********************************************
 class StringLiteralExpression(LiteralExpression):
@@ -438,6 +437,7 @@ class GreaterEqualExpression(BinaryExpression):
         return left_v >= right_v
 
 
+@right_associative
 class AssignExpression(BinaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> None:
         assert (
@@ -454,8 +454,8 @@ class AssignExpression(BinaryExpression):
 
 
 # *********************************************** Statement ***********************************************
-@statement()
-class PrintExpression(StatementExpression):
+@statement
+class PrintExpression(UnaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> Any:
         value = self.right.evaluate(scope)
         if isinstance(value, bool):
@@ -466,8 +466,8 @@ class PrintExpression(StatementExpression):
             print(value)
 
 
-@statement()
-class VarExpression(StatementExpression):
+@statement
+class VarExpression(UnaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> None:
         r: IdentifierExpression
         if self.right.__class__ == IdentifierExpression:
