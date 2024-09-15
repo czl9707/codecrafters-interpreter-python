@@ -64,4 +64,5 @@ class UnMatchedOprendError(RuntimeError):
     
 class UndefinedVariableError(RuntimeError):
     def __init__(self, name: str) -> None:
+        super().__init__()
         self.msg = f"Undefined variable '{name}'."
