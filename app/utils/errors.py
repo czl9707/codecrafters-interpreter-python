@@ -47,8 +47,8 @@ class MissingExpressionError(ParserBaseError):
         return super().__str__() + "Expect expression."
     
 
-class RuntimeError(BaseError, ABC):
-    msg: str
+class RuntimeError(BaseError):
+    msg: str = "General RuntimeError"
     def __init__(self) -> None:
         super().__init__(1)
     

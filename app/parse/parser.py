@@ -3,7 +3,7 @@ from typing import Iterator, Optional
 
 from ..utils import ParserBaseError
 from ..tokens import Tokenizer, EOFSymbol, SemicolonSymbol
-from ..expressions import Expression
+from ..expressions import Expression, StatementExpression
 
 class Parser:
     def __init__(self, s:str) -> None:
@@ -31,7 +31,10 @@ class Parser:
                     expression = None
                     continue
                 
-                expression = Expression.from_token(token, expression, token_iter)
+                if expression and isinstance(expression, StatementExpression):
+                    expression.right = Expression.from_token(token, expression.right, token_iter)
+                else:
+                    expression = Expression.from_token(token, expression, token_iter)
             
             if expression:
                 yield expression

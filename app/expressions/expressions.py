@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, Type, Union, cast
 
-from ..utils import MissingExpressionError, NoneNumberOperandError, UnMatchedOprendError
+from ..utils import MissingExpressionError, NoneNumberOperandError, UnMatchedOprendError, RuntimeError
 
 if TYPE_CHECKING:
     from ..tokens import Token
@@ -16,9 +16,17 @@ def precedence(pre: int) -> Callable[[Type['Expression']], Type['Expression']]:
     return wrapped
 
 
+def statement(is_statement: bool = True) -> Callable[[Type['Expression']], Type['Expression']]:
+    def wrapped(cls: Type['Expression']) -> Type['Expression']:
+        cls._statement = is_statement
+        return cls
+    
+    return wrapped
+
 @precedence(0)
 class Expression(ABC):
     _precedence: int
+    _statement: bool = False
     _token2expression_map: dict[Type['Token'], Type['Expression']] = {}
     
     @abstractmethod
@@ -179,9 +187,26 @@ class UnaryExpression(Expression, ABC):
         token: 'Token', 
         prev_expr: Optional['Expression'], 
         iter: Iterator['Token']
-    ) -> "UnaryExpression":
+    ) -> "Expression":
+        if prev_expr:        
+            right_most = UnaryExpression.__rightest_binary_unary(prev_expr)
+            if right_most and right_most.operator == token:
+                _self = cls(token, right_most.right, iter)
+                right_most.right = _self
+                return prev_expr
+
         return cls(token, prev_expr, iter)
 
+    @staticmethod
+    def __rightest_binary_unary(expr: Expression) -> Optional['BinaryExpression']:
+        second_rightest: Optional[BinaryExpression] = None
+        rightest = expr
+        while hasattr(rightest, "right"):
+            second_rightest = cast(BinaryExpression, rightest)
+            rightest = second_rightest.right
+        
+        return second_rightest
+    
 
 class BinaryExpression(Expression, ABC):
     __slots__ = ["operator", "left", "right"]
@@ -236,30 +261,8 @@ class BinaryExpression(Expression, ABC):
         return second_rightest
 
 
-# class RightAssocBinaryExpression(BinaryExpression, ABC):
-#     @classmethod
-#     def from_token(
-#         cls: Type['RightAssocBinaryExpression'],
-#         token: 'Token', 
-#         prev_expr: Optional['Expression'], 
-#         iter: Iterator['Token']
-#     ) -> "Expression":
-#         if not prev_expr:
-#             raise MissingExpressionError(-1, token)
-        
-#         second_rightest: Optional[RightAssocBinaryExpression] = None
-#         rightest = prev_expr
-#         while hasattr(rightest, "right") and cast(BinaryExpression, prev_expr).operator == token:
-#             second_rightest = cast(RightAssocBinaryExpression, rightest)
-#             rightest = second_rightest.right
-
-#         if hasattr(rightest, "right") or second_rightest.__class__ != cls:
-#             return super(RightAssocBinaryExpression, cls).from_token(token, prev_expr, iter)
-#         else:
-#             _self = cls(token, rightest, iter)
-#             cast(RightAssocBinaryExpression, second_rightest).right = _self
-#             return prev_expr
-        
+class StatementExpression(UnaryExpression):
+    ...
 
 # *********************************************** Literal ***********************************************
 class StringLiteralExpression(LiteralExpression):
@@ -310,31 +313,7 @@ class NegativeExpression(UnaryExpression):
 class BangExpression(UnaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> bool:        
         return not self.right.evaluate(scope)
-
-
-class PrintExpression(UnaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> Any:
-        value = self.right.evaluate(scope)
-        if isinstance(value, bool):
-            print(str(value).lower())
-        elif value is None:
-            print("nil")
-        else:
-            print(value)
-
-
-class VarExpression(UnaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> None:
-        assert self.right.__class__ == IdentifierExpression
-        r: IdentifierExpression = cast(IdentifierExpression, self.right)
-        
-        return scope.create_variable(r.name.lexeme).value
     
-    def left_value_evaluate(self, scope: 'ExceutionScope') -> 'Variable':
-        self.evaluate(scope)
-        r: IdentifierExpression = cast(IdentifierExpression, self.right)
-        return r.left_value_evaluate(scope)
-        
         
 # *********************************************** Binary ***********************************************
 @precedence(3)
@@ -472,6 +451,47 @@ class AssignExpression(BinaryExpression):
         var.value = right_v
         
         return right_v
+
+
+# *********************************************** Statement ***********************************************
+@statement()
+class PrintExpression(StatementExpression):
+    def evaluate(self, scope: 'ExceutionScope') -> Any:
+        value = self.right.evaluate(scope)
+        if isinstance(value, bool):
+            print(str(value).lower())
+        elif value is None:
+            print("nil")
+        else:
+            print(value)
+
+
+@statement()
+class VarExpression(StatementExpression):
+    def evaluate(self, scope: 'ExceutionScope') -> None:
+        r: IdentifierExpression
+        if self.right.__class__ == IdentifierExpression:
+            r = cast(IdentifierExpression, self.right)
+            return scope.create_variable(r.name.lexeme).value
+        elif (
+            self.right.__class__ == AssignExpression and 
+            cast(AssignExpression, self.right).left.__class__ == IdentifierExpression
+        ):
+            r = cast(IdentifierExpression, cast(AssignExpression, self.right).left)
+            scope.create_variable(r.name.lexeme).value
+            self.right.evaluate(scope)
+            
+            return scope.fetch_variable(r.name.lexeme).value
+        
+        raise RuntimeError()
+        
+    
+    def left_value_evaluate(self, scope: 'ExceutionScope') -> 'Variable':
+        self.evaluate(scope)
+        r: IdentifierExpression = cast(IdentifierExpression, self.right)
+        
+        # return variable
+        return r.left_value_evaluate(scope)
         
 
 # *********************************************** Util ***********************************************
