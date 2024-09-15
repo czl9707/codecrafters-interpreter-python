@@ -471,20 +471,22 @@ class PrintExpression(UnaryExpression):
 @statement
 class VarExpression(UnaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> None:
-        r: IdentifierExpression
+        iden: IdentifierExpression
         if self.right.__class__ == IdentifierExpression:
-            r = cast(IdentifierExpression, self.right)
-            return scope.create_variable(r.name.lexeme).value
+            iden = cast(IdentifierExpression, self.right)
+            return scope.create_variable(iden.name.lexeme).value
         elif (
             self.right.__class__ == AssignExpression and 
             cast(AssignExpression, self.right).left.__class__ == IdentifierExpression
         ):
-            r = cast(IdentifierExpression, cast(AssignExpression, self.right).left)
-            scope.create_variable(r.name.lexeme).value
-            self.right.evaluate(scope)
+            assign_expr: AssignExpression = cast(AssignExpression, self.right)
+            iden = cast(IdentifierExpression, assign_expr.left)
+            value = assign_expr.right.evaluate(scope)
+            var = scope.create_variable(iden.name.lexeme)
+            var.value = value
             
-            return scope.fetch_variable(r.name.lexeme).value
-        
+            return value
+                
         raise RuntimeError()
         
     
