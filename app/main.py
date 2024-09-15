@@ -91,15 +91,16 @@ def execute_file(ns: Namespace) -> None:
         file_contents = fd.read()
     
     parser = Parser(file_contents)
+    parse_results = list(parser)
+    if parser.error:
+        exit(65)
+    
     try:
-        for scope, expression in parser:
+        for scope, expression in parse_results:
             expression.evaluate(scope)
     except RuntimeError as e:
         print(e, file=sys.stderr)
         exit(70)
-    
-    if parser.error:
-        exit(65)
 
 
 

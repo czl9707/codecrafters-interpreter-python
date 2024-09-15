@@ -6,4 +6,5 @@ __all__=[
     UnterminatedStringError.__name__,
     MissingExpressionError.__name__,
     UndefinedVariableError.__name__,
+    MissingScopeExpressionError.__name__,
 ]

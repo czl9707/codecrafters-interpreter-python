@@ -35,16 +35,27 @@ class UnterminatedStringError(TokenizerBaseError):
 
     
 class ParserBaseError(BaseError, ABC):
+    def __init__(self, line_num: int) -> None:
+        super().__init__(line_num)
+        
+    def __str__(self) -> str:
+        return super().__str__() + f""
+    
+class MissingExpressionError(ParserBaseError):
     def __init__(self, line_num: int, token: 'Token') -> None:
         super().__init__(line_num)
         self.token = token
         
     def __str__(self) -> str:
-        return super().__str__() + f"Error at '{self.token.lexeme}': "
-    
-class MissingExpressionError(ParserBaseError):
+        return super().__str__() + f"Error at '{self.token.lexeme}': Expect expression."
+
+
+class MissingScopeExpressionError(ParserBaseError):
+    def __init__(self, line_num: int) -> None:
+        super().__init__(line_num)
+        
     def __str__(self) -> str:
-        return super().__str__() + "Expect expression."
+        return super().__str__() + "Error at end: Expect '{' ."
     
 
 class RuntimeError(BaseError):

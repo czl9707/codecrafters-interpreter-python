@@ -1,9 +1,8 @@
 import sys
 from typing import Iterator, Optional
 
-
 from ..execution import ExecutionContext, ExecutionScope
-from ..utils import ParserBaseError
+from ..utils import ParserBaseError, MissingScopeExpressionError
 from ..tokens import Tokenizer, EOFSymbol, SemicolonSymbol, LeftBraceSymbol, RightBraceSymbol
 from ..expressions import Expression
 
@@ -47,6 +46,9 @@ class Parser:
             
             if expression:
                 yield (self.context.current_scope, expression)
+
+            if self.context.current_scope is not self.context.root_scope:
+                raise MissingScopeExpressionError(self.tokenizer.line)
         except ParserBaseError as e:
             e.line_num = self.tokenizer.line
             print(e, file=sys.stderr)
