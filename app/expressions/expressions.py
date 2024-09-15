@@ -252,15 +252,15 @@ class BinaryExpression(Expression, ABC):
             return cls(token, current, iter)
 
         right_node = cls.__insert_self_node(token, current.right, iter)
-        if current.__class__ == right_node.__class__ and not current._right_associative:
+        if current.__class__ == right_node.__class__ and current._right_associative:
+            current.right = right_node
+            return current    
+        else:
             assert isinstance(right_node, BinaryExpression)
             current.right = right_node.left
             right_node.left = current
                         
             return right_node
-        else:
-            current.right = right_node
-            return current    
 
 # *********************************************** Literal ***********************************************
 class StringLiteralExpression(LiteralExpression):
