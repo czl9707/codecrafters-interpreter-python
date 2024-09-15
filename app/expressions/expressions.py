@@ -322,7 +322,7 @@ class VarExpression(UnaryExpression):
         
         
 # *********************************************** Binary ***********************************************
-@precedence(3)
+# @precedence(3)
 class PlusExpression(BinaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> Any:        
         left_v = self.left.evaluate(scope)
@@ -341,7 +341,7 @@ class PlusExpression(BinaryExpression):
             raise NoneNumberOperandError()
         
 
-@precedence(3)
+# @precedence(3)
 class MinusExpression(BinaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> Any:
         left_v = self.left.evaluate(scope)
@@ -352,7 +352,7 @@ class MinusExpression(BinaryExpression):
         return left_v - right_v
     
 
-@precedence(4)
+# @precedence(4)
 class DivideExpression(BinaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> Any:
         left_v = self.left.evaluate(scope)
@@ -366,7 +366,7 @@ class DivideExpression(BinaryExpression):
             return left_v // right_v
     
     
-@precedence(4)
+# @precedence(4)
 class MultiplyExpression(BinaryExpression):
     def evaluate(self, scope: 'ExceutionScope') -> Any:
         left_v = self.left.evaluate(scope)
