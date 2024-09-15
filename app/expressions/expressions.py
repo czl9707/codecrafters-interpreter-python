@@ -5,7 +5,7 @@ from ..utils import MissingExpressionError, NoneNumberOperandError, UnMatchedOpr
 
 if TYPE_CHECKING:
     from ..tokens import Token
-    from ..execution import ExceutionScope, Variable
+    from ..execution import ExecutionScope, Variable
 
 
 def precedence(pre: int) -> Callable[[Type['Expression']], Type['Expression']]:
@@ -66,7 +66,7 @@ class Expression(ABC):
         return Expression._token2expression_map[token.__class__].from_token(token, prev_expr, iter)
     
     @abstractmethod
-    def evaluate(self, scope: 'ExceutionScope') -> Any:
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
         ...
     
     @classmethod
@@ -129,7 +129,7 @@ class GroupExpression(Expression):
     ) -> "GroupExpression":
         return cls(token, prev_expr, iter)
 
-    def evaluate(self, scope: 'ExceutionScope') -> Any:
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
         if self.expr:
             return self.expr.evaluate(scope)
         else:
@@ -157,10 +157,10 @@ class IdentifierExpression(Expression):
     ) -> "IdentifierExpression":
         return cls(token, prev_expr, iter)
 
-    def evaluate(self, scope: 'ExceutionScope') -> Any:
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
         return scope.fetch_variable(self.name.lexeme).value
     
-    def left_value_evaluate(self, scope: 'ExceutionScope') -> 'Variable':
+    def left_value_evaluate(self, scope: 'ExecutionScope') -> 'Variable':
         return scope.fetch_variable(self.name.lexeme)
 
     def __str__(self) -> str:
@@ -270,7 +270,7 @@ class StringLiteralExpression(LiteralExpression):
     def __str__(self) -> str:
         return self.value.literal
         
-    def evaluate(self, scope: 'ExceutionScope') -> str:
+    def evaluate(self, scope: 'ExecutionScope') -> str:
         return self.value.literal
        
         
@@ -278,7 +278,7 @@ class NumberLiteralExpression(LiteralExpression):
     def __str__(self) -> str:
         return self.value.literal
         
-    def evaluate(self, scope: 'ExceutionScope') -> Union[int, float]:
+    def evaluate(self, scope: 'ExecutionScope') -> Union[int, float]:
         if "." in self.value.lexeme:
             return float(self.value.lexeme)
         return int(self.value.lexeme)
@@ -288,7 +288,7 @@ class BooleanLiteralExpression(LiteralExpression):
     def __str__(self) -> str:
         return self.value.lexeme
 
-    def evaluate(self, scope: 'ExceutionScope') -> bool:
+    def evaluate(self, scope: 'ExecutionScope') -> bool:
         return self.value.lexeme == "true"
     
 
@@ -296,13 +296,13 @@ class NilLiteralExpression(LiteralExpression):
     def __str__(self) -> str:
         return self.value.lexeme
 
-    def evaluate(self, scope: 'ExceutionScope') -> None:
+    def evaluate(self, scope: 'ExecutionScope') -> None:
         return None
 
 # *********************************************** Unary ***********************************************
 @precedence(5)
 class NegativeExpression(UnaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> Any:
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
         right_v = self.right.evaluate(scope)
         if not _is_number(right_v):
             raise NoneNumberOperandError()
@@ -312,14 +312,14 @@ class NegativeExpression(UnaryExpression):
 
 @precedence(5)
 class BangExpression(UnaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> bool:        
+    def evaluate(self, scope: 'ExecutionScope') -> bool:        
         return not self.right.evaluate(scope)
     
         
 # *********************************************** Binary ***********************************************
 @precedence(3)
 class PlusExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> Any:        
+    def evaluate(self, scope: 'ExecutionScope') -> Any:        
         left_v = self.left.evaluate(scope)
         right_v = self.right.evaluate(scope)
         if isinstance(left_v, str) and isinstance(right_v, str):
@@ -338,7 +338,7 @@ class PlusExpression(BinaryExpression):
 
 @precedence(3)
 class MinusExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> Any:
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
         left_v = self.left.evaluate(scope)
         right_v = self.right.evaluate(scope)
         if not _is_number(left_v) or not _is_number(right_v):
@@ -350,7 +350,7 @@ class MinusExpression(BinaryExpression):
 # @precedence(3)
 @precedence(4)
 class DivideExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> Any:
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
         left_v = self.left.evaluate(scope)
         right_v = self.right.evaluate(scope)
         if not _is_number(left_v) or not _is_number(right_v):
@@ -365,7 +365,7 @@ class DivideExpression(BinaryExpression):
 # @precedence(3)
 @precedence(4)
 class MultiplyExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> Any:
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
         left_v = self.left.evaluate(scope)
         right_v = self.right.evaluate(scope)
         if not _is_number(left_v) or not _is_number(right_v):
@@ -375,18 +375,18 @@ class MultiplyExpression(BinaryExpression):
     
 
 class AndExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> bool:        
+    def evaluate(self, scope: 'ExecutionScope') -> bool:        
         return self.left.evaluate(scope) and self.right.evaluate(scope) 
 
 
 class OrExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> bool:        
+    def evaluate(self, scope: 'ExecutionScope') -> bool:        
         return self.left.evaluate(scope) or self.right.evaluate(scope)
     
 
 @precedence(1)
 class EqualEqualExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> bool:
+    def evaluate(self, scope: 'ExecutionScope') -> bool:
         left_v = self.left.evaluate(scope)
         right_v = self.right.evaluate(scope)
         return left_v == right_v
@@ -394,7 +394,7 @@ class EqualEqualExpression(BinaryExpression):
 
 @precedence(1)
 class BangEqualExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> bool:
+    def evaluate(self, scope: 'ExecutionScope') -> bool:
         left_v = self.left.evaluate(scope)
         right_v = self.right.evaluate(scope)
         return left_v != right_v
@@ -402,7 +402,7 @@ class BangEqualExpression(BinaryExpression):
 
 @precedence(2)
 class LessExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> bool:
+    def evaluate(self, scope: 'ExecutionScope') -> bool:
         left_v = self.left.evaluate(scope)
         right_v = self.right.evaluate(scope)
         if not _is_number(left_v) or not _is_number(right_v):
@@ -411,7 +411,7 @@ class LessExpression(BinaryExpression):
 
 @precedence(2)
 class LessEqualExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> bool:
+    def evaluate(self, scope: 'ExecutionScope') -> bool:
         left_v = self.left.evaluate(scope)
         right_v = self.right.evaluate(scope)
         if not _is_number(left_v) or not _is_number(right_v):
@@ -421,7 +421,7 @@ class LessEqualExpression(BinaryExpression):
 
 @precedence(2)
 class GreaterExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> bool:
+    def evaluate(self, scope: 'ExecutionScope') -> bool:
         left_v = self.left.evaluate(scope)
         right_v = self.right.evaluate(scope)
         if not _is_number(left_v) or not _is_number(right_v):
@@ -431,7 +431,7 @@ class GreaterExpression(BinaryExpression):
 
 @precedence(2)
 class GreaterEqualExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> bool:
+    def evaluate(self, scope: 'ExecutionScope') -> bool:
         left_v = self.left.evaluate(scope)
         right_v = self.right.evaluate(scope)
         if not _is_number(left_v) or not _is_number(right_v):
@@ -441,7 +441,7 @@ class GreaterEqualExpression(BinaryExpression):
 
 @right_associative
 class AssignExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> None:
+    def evaluate(self, scope: 'ExecutionScope') -> None:
         assert (
             isinstance(self.left, IdentifierExpression) or 
             isinstance(self.left, VarExpression)
@@ -458,7 +458,7 @@ class AssignExpression(BinaryExpression):
 # *********************************************** Statement ***********************************************
 @statement
 class PrintExpression(UnaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> Any:
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
         value = self.right.evaluate(scope)
         if isinstance(value, bool):
             print(str(value).lower())
@@ -470,7 +470,7 @@ class PrintExpression(UnaryExpression):
 
 @statement
 class VarExpression(UnaryExpression):
-    def evaluate(self, scope: 'ExceutionScope') -> None:
+    def evaluate(self, scope: 'ExecutionScope') -> None:
         iden: IdentifierExpression
         if self.right.__class__ == IdentifierExpression:
             iden = cast(IdentifierExpression, self.right)
@@ -490,7 +490,7 @@ class VarExpression(UnaryExpression):
         raise RuntimeError()
         
     
-    def left_value_evaluate(self, scope: 'ExceutionScope') -> 'Variable':
+    def left_value_evaluate(self, scope: 'ExecutionScope') -> 'Variable':
         self.evaluate(scope)
         r: IdentifierExpression = cast(IdentifierExpression, self.right)
         

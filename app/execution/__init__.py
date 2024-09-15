@@ -1,7 +1,8 @@
-from .execution_context import ExceutionScope, Variable
+from .execution_context import ExecutionScope, Variable, ExecutionContext
 
 
 __all__ = [
-    ExceutionScope.__name__,
+    ExecutionContext.__name__,
+    ExecutionScope.__name__,
     Variable.__name__,
 ]

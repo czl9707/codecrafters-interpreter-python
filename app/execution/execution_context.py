@@ -1,14 +1,34 @@
-from typing import Any, TYPE_CHECKING, cast
+from typing import Any, TYPE_CHECKING, Optional, cast
 
-from ..utils import UndefinedVariableError
+from ..utils import UndefinedVariableError, RuntimeError
 
 if TYPE_CHECKING:
     from ..expressions import IdentifierExpression
 
-class ExceutionScope:
+class ExecutionContext:
+    def __init__(self) -> None:
+        self.root_scope = ExecutionScope(None)
+        self._current_scope = self.root_scope
+    
+    @property
+    def current_scope(self) -> 'ExecutionScope':
+        return self._current_scope
+    
+    def push_scope(self) -> None:
+        self._current_scope = ExecutionScope(self.current_scope)
+    
+    def pop_scope(self) -> None:
+        if not self.current_scope.parent:
+            raise RuntimeError()
+        
+        self._current_scope = self.current_scope.parent
+
+
+class ExecutionScope:
     _variables: dict[str, 'Variable']
     
-    def __init__(self) -> None:
+    def __init__(self, parent: Optional['ExecutionScope']) -> None:
+        self.parent = parent
         self._variables = {}
     
     def create_variable(self, name: str) -> 'Variable':
@@ -16,14 +36,19 @@ class ExceutionScope:
         return self._variables[name]
 
     def fetch_variable(self, name: str) -> 'Variable':
-        if name not in self._variables:
-            raise UndefinedVariableError(name)
-        return self._variables[name]
+        scope: Optional['ExecutionScope'] = self
+        while scope:
+            if name in self._variables:
+                return self._variables[name]
+            scope = scope.parent
+            
+        raise UndefinedVariableError(name)
+
 
 class Variable:
     __slots__ = ["scope", "name", "value"]
     value: Any
-    def __init__(self, scope: ExceutionScope, name: str) -> None:
+    def __init__(self, scope: ExecutionScope, name: str) -> None:
         self.scope = scope
         self.name = name
         self.value = None

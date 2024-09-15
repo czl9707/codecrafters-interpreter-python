@@ -3,7 +3,7 @@ import sys
 
 from .tokens import Tokenizer
 from .parse import Parser
-from .execution import ExceutionScope
+from .execution import ExecutionScope
 from .utils import RuntimeError
 
 def main():
@@ -45,7 +45,7 @@ def print_parse_result(ns: Namespace) -> None:
         file_contents = fd.read()
     
     parser = Parser(file_contents)
-    for expression in parser:
+    for scope, expression in parser:
         print(expression)
     
     if parser.error:
@@ -58,8 +58,8 @@ def print_evalute_result(ns: Namespace) -> None:
     
     parser = Parser(file_contents)
     try:
-        for expression in parser:
-            value = expression.evaluate(ExceutionScope())
+        for scope, expression in parser:
+            value = expression.evaluate(scope)
             if isinstance(value, bool):
                 print(str(value).lower())
             elif value is None:
@@ -90,10 +90,9 @@ def execute_file(ns: Namespace) -> None:
     with open(ns.file) as fd:
         file_contents = fd.read()
     
-    scope = ExceutionScope()
     parser = Parser(file_contents)
     try:
-        for expression in parser:
+        for scope, expression in parser:
             expression.evaluate(scope)
     except RuntimeError as e:
         print(e, file=sys.stderr)
