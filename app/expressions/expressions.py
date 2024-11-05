@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, Type, Union
 from ..utils import MissingExpressionError, NoneNumberOperandError, UnMatchedOprendError, RuntimeError
 
 if TYPE_CHECKING:
-    from ..tokens import Token
+    from ..tokens import Token, PrintReservedWord
     from ..execution import ExecutionScope, Variable
 
 
@@ -14,11 +14,6 @@ def precedence(pre: int) -> Callable[[Type['Expression']], Type['Expression']]:
         return cls
     
     return wrapped
-
-
-def statement(cls: Type['Expression']) -> Type['Expression']:
-    cls._statement = True
-    return cls
     
 def right_associative(cls: Type['Expression']) -> Type['Expression']:
     cls._right_associative = True
@@ -27,7 +22,6 @@ def right_associative(cls: Type['Expression']) -> Type['Expression']:
 @precedence(0)
 class Expression(ABC):
     _precedence: int
-    _statement: bool = False
     _right_associative: bool = False
     _token2expression_map: dict[Type['Token'], Type['Expression']] = {}
     
@@ -51,6 +45,27 @@ class Expression(ABC):
     ):
         token = next(iter)
         return Expression.from_token(token, prev_expr, iter)
+    
+    
+    @staticmethod
+    def from_iter_till_semicolon(
+        token: 'Token',
+        iter: Iterator['Token']
+    ) -> 'Expression':
+        expression = None
+        
+        while token:
+            if token.lexeme == ";":
+                if not expression:
+                    raise MissingExpressionError(-1, token)
+                return expression
+            
+            expression = Expression.from_token(token, expression, iter)
+            if isinstance(expression, StatementExpression):
+                return expression
+            token = next(iter)
+        
+        raise MissingExpressionError(-1, token)
     
     @classmethod
     @abstractmethod
@@ -265,6 +280,10 @@ class BinaryExpression(Expression, ABC):
                         
             return right_node
 
+class StatementExpression(Expression, ABC):
+    "StatementExpression's from_token always consume all the way to end of expression" 
+    pass
+
 # *********************************************** Literal ***********************************************
 class StringLiteralExpression(LiteralExpression):
     def __str__(self) -> str:
@@ -456,10 +475,35 @@ class AssignExpression(BinaryExpression):
 
 
 # *********************************************** Statement ***********************************************
-@statement
-class PrintExpression(UnaryExpression):
+class PrintExpression(StatementExpression):
+    __slots__= ["body"]
+    body: Expression
+    
+    def __init__(
+        self, 
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        iter: Iterator['Token']
+    ) -> None:
+        assert prev_expr is None
+        assert token.lexeme == "print"
+        
+        self.body = Expression.from_iter_till_semicolon(next(iter) ,iter)
+    
+    def __str__(self) -> str:
+        return f"(print {self.body})"
+    
+    @classmethod
+    def from_token(
+        cls: Type['PrintExpression'],
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        iter: Iterator['Token']
+    ) -> "PrintExpression":
+        return cls(token, prev_expr, iter)
+    
     def evaluate(self, scope: 'ExecutionScope') -> Any:
-        value = self.right.evaluate(scope)
+        value = self.body.evaluate(scope)
         if isinstance(value, bool):
             print(str(value).lower())
         elif value is None:
@@ -468,35 +512,56 @@ class PrintExpression(UnaryExpression):
             print(value)
 
 
-@statement
-class VarExpression(UnaryExpression):
-    def evaluate(self, scope: 'ExecutionScope') -> None:
-        iden: IdentifierExpression
-        if self.right.__class__ == IdentifierExpression:
-            iden = cast(IdentifierExpression, self.right)
-            return scope.create_variable(iden.name.lexeme).value
-        elif (
-            self.right.__class__ == AssignExpression and 
-            cast(AssignExpression, self.right).left.__class__ == IdentifierExpression
-        ):
-            assign_expr: AssignExpression = cast(AssignExpression, self.right)
-            iden = cast(IdentifierExpression, assign_expr.left)
-            value = assign_expr.right.evaluate(scope)
-            var = scope.create_variable(iden.name.lexeme)
-            var.value = value
-            
-            return value
-                
-        raise RuntimeError()
+class VarExpression(StatementExpression):
+    __slots__ = ["identifier", "assignment"]
+    identifier: IdentifierExpression
+    assignment: Optional[AssignExpression]
+    
+    def __init__(
+        self, 
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        iter: Iterator['Token']
+    ) -> None:
+        assert prev_expr is None
+        assert token.lexeme == "var"
         
+        expr = Expression.from_iter_till_semicolon(next(iter) ,iter)
+        if isinstance(expr, AssignExpression):
+            self.assignment = cast(AssignExpression, expr)
+            assert self.assignment.left.__class__ == IdentifierExpression
+            self.identifier = cast(IdentifierExpression, self.assignment.left)
+        elif expr.__class__ == IdentifierExpression:
+            self.identifier = cast(IdentifierExpression, expr)
+        else:
+            raise RuntimeError()
+    
+    def __str__(self) -> str:
+        return f"(var {self.assignment if self.assignment else self.identifier})"
+    
+    @classmethod
+    def from_token(
+        cls: Type['VarExpression'],
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        iter: Iterator['Token']
+    ) -> "VarExpression":
+        return cls(token, prev_expr, iter)
+    
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
+        value = None
+        if self.assignment:
+            value = self.assignment.right.evaluate(scope)
+        variable = scope.create_variable(self.identifier.name.lexeme)
+        variable.value = value
+        
+        return variable.value
     
     def left_value_evaluate(self, scope: 'ExecutionScope') -> 'Variable':
         self.evaluate(scope)
-        r: IdentifierExpression = cast(IdentifierExpression, self.right)
-        
-        # return variable
-        return r.left_value_evaluate(scope)
-        
+        return self.identifier.left_value_evaluate(scope)
+
+
 
 # *********************************************** Util ***********************************************
 def _is_number(obj: Any):

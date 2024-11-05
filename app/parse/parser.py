@@ -1,9 +1,9 @@
 import sys
-from typing import Iterator, Optional
+from typing import Iterator
 
 from ..execution import ExecutionContext, ExecutionScope
 from ..utils import ParserBaseError, MissingScopeExpressionError
-from ..tokens import Tokenizer, EOFSymbol, SemicolonSymbol, LeftBraceSymbol, RightBraceSymbol
+from ..tokens import Tokenizer, EOFSymbol, LeftBraceSymbol, RightBraceSymbol
 from ..expressions import Expression
 
 class Parser:
@@ -18,7 +18,6 @@ class Parser:
     
     def __iter__(self) -> Iterator[tuple[ExecutionScope, Expression]]:
         token_iter = iter(self.tokenizer)
-        expression: Optional[Expression] = None
     
         try:
             for token in token_iter:
@@ -26,12 +25,6 @@ class Parser:
 
                 if token.__class__ == EOFSymbol:
                     break
-                if token.__class__ == SemicolonSymbol:
-                    if expression:
-                        # print("DEBUG: " + str(expression))
-                        yield (self.context.current_scope, expression)
-                    expression = None
-                    continue
                 if token.__class__ == LeftBraceSymbol:
                     self.context.push_scope()
                     continue
@@ -39,14 +32,12 @@ class Parser:
                     self.context.pop_scope()
                     continue
                 
-                if expression and expression._statement:
-                    expression.right = Expression.from_token(token, expression.right, token_iter)
-                else:
-                    expression = Expression.from_token(token, expression, token_iter)
+                expression = Expression.from_iter_till_semicolon(token, token_iter)
+                yield (
+                    self.context.current_scope,
+                    expression,
+                )
             
-            if expression:
-                yield (self.context.current_scope, expression)
-
             if self.context.current_scope is not self.context.root_scope:
                 raise MissingScopeExpressionError(self.tokenizer.line)
         except ParserBaseError as e:
