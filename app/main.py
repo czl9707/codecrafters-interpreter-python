@@ -3,7 +3,7 @@ import sys
 
 
 from .expressions import Expression
-from .tokens import Tokenizer
+from .tokens import Tokenizer, EOFSymbol
 from .parse import Parser
 from .execution import ExecutionScope
 from .utils import RuntimeError, ParserBaseError
@@ -61,6 +61,8 @@ def print_evalute_result(ns: Namespace) -> None:
         scope = ExecutionScope()
         expression = None
         for token in token_iter:
+            if isinstance(token, EOFSymbol):
+                break
             expression = Expression.from_token(token, expression, token_iter)
         if expression:
             result = expression.evaluate(scope)
