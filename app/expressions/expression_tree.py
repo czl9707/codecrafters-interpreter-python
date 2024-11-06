@@ -16,23 +16,21 @@ class ExpressionTree(StatementExpression):
         self, 
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> None:
         assert prev_expr is None
         self.children = []
         
-        if token.lexeme == "{":
-            token = next(iter)
+        assert token.lexeme == "{"
+        token = next(token_iter)
         while token:
-            # print("DEBUG: " + str(token))
-
-            if token.token_type == "EOF" or token.lexeme == "}":
+            if token.lexeme == "}":
                 return
             
             self.children.append(
-                Expression.from_iter_till_end(token, iter)
+                Expression.from_iter_till_end(token, token_iter)
             )
-            token = next(iter)
+            token = next(token_iter)
         
         raise MissingScopeExpressionError()
 
@@ -44,17 +42,35 @@ class ExpressionTree(StatementExpression):
             "leaving scope",
         ])
     
-    @classmethod
-    def from_token(
-        cls: Type['ExpressionTree'],
-        token: 'Token', 
-        prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
-    ) -> 'ExpressionTree':
-        return cls(token, prev_expr, iter)
-    
     def evaluate(self, scope: 'ExecutionScope') -> None:
         scope = scope.create_child_scope()
         for child in self.children:
             child.evaluate(scope)
+
+
+# passing in dummy token to avoid { as the first token
+class RootExpressionTree(ExpressionTree):
+    __slots__=["children"]
+    children: list[Expression]
+    
+    def __init__(
+        self, 
+        token: 'Token', # dummy token
+        prev_expr: Optional['Expression'], 
+        token_iter: Iterator['Token']
+    ) -> None:
+        assert prev_expr is None
+        self.children = []
+        
+        token = next(token_iter)
+        while token:
+            if token.token_type == "EOF":
+                return
+            
+            self.children.append(
+                Expression.from_iter_till_end(token, token_iter)
+            )
+            token = next(token_iter)
+        
+        raise MissingScopeExpressionError()
     

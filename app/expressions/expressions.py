@@ -76,7 +76,6 @@ class Expression(ABC):
         token_iter: Iterator['Token']
     ) -> 'Expression':
         if token.__class__ not in Expression._token2expression_map:
-            print(81)
             raise MissingExpressionError(token)
         
         return Expression._token2expression_map[token.__class__].from_token(token, prev_expr, token_iter)
