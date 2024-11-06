@@ -42,7 +42,7 @@ class Expression(ABC):
     def from_iter(
         iter: Iterator['Token'],
         prev_expr: Optional['Expression'],
-    ):
+    ) -> 'Expression':
         token = next(iter)
         return Expression.from_token(token, prev_expr, iter)
     
@@ -57,7 +57,7 @@ class Expression(ABC):
         while token:
             if token.lexeme == ";":
                 if not expression:
-                    raise MissingExpressionError(-1, token)
+                    raise MissingExpressionError(token)
                 return expression
             
             expression = Expression.from_token(token, expression, iter)
@@ -65,7 +65,7 @@ class Expression(ABC):
                 return expression
             token = next(iter)
         
-        raise MissingExpressionError(-1, token)
+        raise MissingExpressionError(token)
     
     @classmethod
     @abstractmethod
@@ -76,7 +76,7 @@ class Expression(ABC):
         iter: Iterator['Token']
     ) -> 'Expression':
         if token.__class__ not in Expression._token2expression_map:
-            raise MissingExpressionError(-1, token)
+            raise MissingExpressionError(token)
         
         return Expression._token2expression_map[token.__class__].from_token(token, prev_expr, iter)
     
@@ -252,7 +252,7 @@ class BinaryExpression(Expression, ABC):
         iter: Iterator['Token']
     ) -> "Expression":
         if not prev_expr:
-            raise MissingExpressionError(-1, token)
+            raise MissingExpressionError(token)
         
         return cls.__insert_self_node(token, prev_expr, iter)
 

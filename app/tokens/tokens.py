@@ -32,6 +32,8 @@ from ..expressions import (
     VarExpression,
     IdentifierExpression,
     AssignExpression,
+    
+    ExpressionTree,
 )
     
 
@@ -83,7 +85,7 @@ class Token(ABC):
         elif Token.is_identifier(cp):
             return Identifier.from_iter(cp)
 
-        raise UnexpectedCharacterError(cp.line, cp.forward())
+        raise UnexpectedCharacterError(cp.forward())
     
     def __str__(self) -> str:
         return f"{self.token_type} {self.lexeme} {self.literal}"
@@ -131,10 +133,9 @@ class StringLiteral(Token):
             raise Exception("What the hack are you doing")
         
         cp.forward()
-        line_num = cp.line
         s = cp.forward_until("\"")
         if s[-1] != "\"":
-            raise UnterminatedStringError(line_num)
+            raise UnterminatedStringError()
         
         else:
             return StringLiteral(s[:-1])
@@ -201,6 +202,7 @@ class ReservedWord(Token, ABC):
         raise Exception("What the hack are you doing")
 
 
+@ExpressionTree.yield_from
 class LeftBraceSymbol(Symbol):
     token_type = "LEFT_BRACE"
     lexeme = "{"

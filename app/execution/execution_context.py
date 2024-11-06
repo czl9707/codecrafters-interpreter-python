@@ -1,9 +1,7 @@
-from typing import Any, TYPE_CHECKING, Optional, cast
+from typing import Any, Optional, cast
 
 from ..utils import UndefinedVariableError, RuntimeError
 
-if TYPE_CHECKING:
-    from ..expressions import IdentifierExpression
 
 class ExecutionContext:
     def __init__(self) -> None:
@@ -27,7 +25,7 @@ class ExecutionContext:
 class ExecutionScope:
     _variables: dict[str, 'Variable']
     
-    def __init__(self, parent: Optional['ExecutionScope']) -> None:
+    def __init__(self, parent: Optional['ExecutionScope']=None) -> None:
         self.parent = parent
         self._variables = {}
     
@@ -43,6 +41,9 @@ class ExecutionScope:
             scope = scope.parent
             
         raise UndefinedVariableError(name)
+
+    def create_child_scope(self) -> 'ExecutionScope':
+        return ExecutionScope(self)
 
 
 class Variable:
@@ -64,3 +65,5 @@ class Variable:
     
     def __str__(self) -> str:
         return f"{self.name}: {self.value}"
+    
+    

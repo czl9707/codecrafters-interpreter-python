@@ -1,4 +1,5 @@
 from .expressions import *
+from .expression_tree import *
 
 __all__ = [
     Expression.__name__,
@@ -32,6 +33,8 @@ __all__ = [
     VarExpression.__name__,
     IdentifierExpression.__name__,
     AssignExpression.__name__,
+    
+    ExpressionTree.__name__,
 ]
 
 

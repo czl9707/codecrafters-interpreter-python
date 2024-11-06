@@ -1,20 +1,12 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..expressions import Expression
     from ..tokens import Token
 
 
-class BaseError(ABC, BaseException):
-    line_num: int
-    
-    def __init__(self, line_num: int) -> None:
-        self.line_num = line_num
-    
-    @abstractmethod
-    def __str__(self) -> str:
-        return f"[line {self.line_num}] "
+class BaseError(ABC, BaseException):            
+    pass
 
 class TokenizerBaseError(BaseError, ABC):
     def __str__(self) -> str:
@@ -22,8 +14,8 @@ class TokenizerBaseError(BaseError, ABC):
 
 
 class UnexpectedCharacterError(TokenizerBaseError):
-    def __init__(self, line_num: int, ch: str) -> None:
-        super().__init__(line_num)
+    def __init__(self, ch: str) -> None:
+        super().__init__()
         self.ch = ch
     
     def __str__(self) -> str:
@@ -35,25 +27,17 @@ class UnterminatedStringError(TokenizerBaseError):
 
     
 class ParserBaseError(BaseError, ABC):
-    def __init__(self, line_num: int) -> None:
-        super().__init__(line_num)
-        
-    def __str__(self) -> str:
-        return super().__str__() + f""
-    
+    pass
+
 class MissingExpressionError(ParserBaseError):
-    def __init__(self, line_num: int, token: 'Token') -> None:
-        super().__init__(line_num)
+    def __init__(self, token: 'Token') -> None:
         self.token = token
         
     def __str__(self) -> str:
         return super().__str__() + f"Error at '{self.token.lexeme}': Expect expression."
 
 
-class MissingScopeExpressionError(ParserBaseError):
-    def __init__(self, line_num: int) -> None:
-        super().__init__(line_num)
-        
+class MissingScopeExpressionError(ParserBaseError):        
     def __str__(self) -> str:
         return super().__str__() + "Error at end: Expect '{' ."
     

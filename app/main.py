@@ -25,8 +25,6 @@ def parse_args() -> Namespace:
     return arg_parser.parse_args()
 
 
-
-
 def config_parse_parser(arg_parser: ArgumentParser) -> None:
     arg_parser.set_defaults(entry=print_parse_result)
     
@@ -45,7 +43,7 @@ def print_parse_result(ns: Namespace) -> None:
         file_contents = fd.read()
     
     parser = Parser(file_contents)
-    for scope, expression in parser:
+    for expression in parser:
         print(expression)
     
     if parser.error:
@@ -57,8 +55,9 @@ def print_evalute_result(ns: Namespace) -> None:
         file_contents = fd.read()
     
     parser = Parser(file_contents)
+    scope = ExecutionScope()
     try:
-        for scope, expression in parser:
+        for expression in parser:
             value = expression.evaluate(scope)
             if isinstance(value, bool):
                 print(str(value).lower())
@@ -91,13 +90,11 @@ def execute_file(ns: Namespace) -> None:
         file_contents = fd.read()
     
     parser = Parser(file_contents)
-    parse_results = list(parser)
     if parser.error:
         exit(65)
     
     try:
-        for scope, expression in parse_results:
-            expression.evaluate(scope)
+        parser.ast.evaluate(ExecutionScope())
     except RuntimeError as e:
         print(e, file=sys.stderr)
         exit(70)

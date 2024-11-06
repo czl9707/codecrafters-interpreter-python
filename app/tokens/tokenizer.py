@@ -26,7 +26,7 @@ class Tokenizer:
                 yield Token.from_iter(self.cp)
             except TokenizerBaseError as e:
                 self.error = True
-                print(e, file=sys.stderr)
+                print(f"[line {self.line}] {e}", file=sys.stderr)
                 
         yield EOFSymbol()
         
