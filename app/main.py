@@ -45,7 +45,8 @@ def print_parse_result(ns: Namespace) -> None:
         file_contents = fd.read()
     
     try:
-        token_iter = iter(Tokenizer(file_contents))
+        tokenizer = Tokenizer(file_contents)
+        token_iter = iter(tokenizer)
         expression = None
         for token in token_iter:
             if isinstance(token, EOFSymbol):
@@ -55,6 +56,8 @@ def print_parse_result(ns: Namespace) -> None:
         print(f"[line 1] {e}", file=sys.stderr)
         exit(65)
 
+    if tokenizer.error:
+        exit(65)
 
 def print_evalute_result(ns: Namespace) -> None:
     with open(ns.file) as fd:
