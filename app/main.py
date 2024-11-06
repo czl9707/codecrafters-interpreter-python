@@ -52,6 +52,8 @@ def print_parse_result(ns: Namespace) -> None:
             if isinstance(token, EOFSymbol):
                 break
             expression = Expression.from_token(token, expression, token_iter)
+        
+        print(expression)
     except ParserBaseError as e:
         print(f"[line 1] {e}", file=sys.stderr)
         exit(65)
