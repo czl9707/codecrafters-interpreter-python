@@ -32,6 +32,8 @@ from ..expressions import (
     VarExpression,
     IdentifierExpression,
     AssignExpression,
+    IfExpression,
+    ElseExpression,
     
     ExpressionTree,
 )
@@ -310,6 +312,7 @@ class ClassReservedWord(ReservedWord):
     token_type = "CLASS"
     lexeme = "class"
 
+@ElseExpression.yield_from
 class ElseReservedWord(ReservedWord):
     token_type = "ELSE"
     lexeme = "else"
@@ -337,6 +340,7 @@ class FunReservedWord(ReservedWord):
     token_type = "FUN"
     lexeme = "fun"
 
+@IfExpression.yield_from
 class IfReservedWord(ReservedWord):
     token_type = "IF"
     lexeme = "if"

@@ -24,6 +24,7 @@ class ExecutionContext:
 
 class ExecutionScope:
     _variables: dict[str, 'Variable']
+    prev_if_result = False
     
     def __init__(self, parent: Optional['ExecutionScope']=None) -> None:
         self.parent = parent

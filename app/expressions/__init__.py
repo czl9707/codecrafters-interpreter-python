@@ -32,6 +32,8 @@ __all__ = [
     
     VarExpression.__name__,
     IdentifierExpression.__name__,
+    IfExpression.__name__,
+    ElseExpression.__name__,
     AssignExpression.__name__,
     
     ExpressionTree.__name__,

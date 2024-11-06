@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from ..tokens import Token
     from ..execution import ExecutionScope
 
+"Scope token will generate a this guy"
 class ExpressionTree(StatementExpression):
     __slots__=["children"]
     children: list[Expression]
@@ -29,7 +30,7 @@ class ExpressionTree(StatementExpression):
                 return
             
             self.children.append(
-                Expression.from_iter_till_semicolon(token, iter)
+                Expression.from_iter_till_end(token, iter)
             )
             token = next(iter)
         

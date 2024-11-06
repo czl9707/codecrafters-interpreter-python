@@ -10,7 +10,7 @@ class BaseError(ABC, BaseException):
 
 class TokenizerBaseError(BaseError, ABC):
     def __str__(self) -> str:
-        return super().__str__() + "Error: "
+        return "Error: "
 
 
 class UnexpectedCharacterError(TokenizerBaseError):
@@ -27,7 +27,8 @@ class UnterminatedStringError(TokenizerBaseError):
 
     
 class ParserBaseError(BaseError, ABC):
-    pass
+    def __str__(self) -> str:
+        return ""
 
 class MissingExpressionError(ParserBaseError):
     def __init__(self, token: 'Token') -> None:

@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Self, Callable, Iterator, Optional, Type, Union, cast
 
 from ..utils import MissingExpressionError, NoneNumberOperandError, UnMatchedOprendError, RuntimeError
 
 if TYPE_CHECKING:
-    from ..tokens import Token, PrintReservedWord
+    from ..tokens import Token
     from ..execution import ExecutionScope, Variable
 
 
@@ -30,7 +30,7 @@ class Expression(ABC):
         self, 
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> None:
         ...
         
@@ -40,17 +40,17 @@ class Expression(ABC):
     
     @staticmethod
     def from_iter(
-        iter: Iterator['Token'],
+        token_iter: Iterator['Token'],
         prev_expr: Optional['Expression'],
     ) -> 'Expression':
-        token = next(iter)
-        return Expression.from_token(token, prev_expr, iter)
+        token = next(token_iter)
+        return Expression.from_token(token, prev_expr, token_iter)
     
     
     @staticmethod
-    def from_iter_till_semicolon(
+    def from_iter_till_end(
         token: 'Token',
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> 'Expression':
         expression = None
         
@@ -60,11 +60,11 @@ class Expression(ABC):
                     raise MissingExpressionError(token)
                 return expression
             
-            expression = Expression.from_token(token, expression, iter)
+            expression = Expression.from_token(token, expression, token_iter)
             if isinstance(expression, StatementExpression):
                 return expression
-            token = next(iter)
-        
+            token = next(token_iter)
+
         raise MissingExpressionError(token)
     
     @classmethod
@@ -73,12 +73,13 @@ class Expression(ABC):
         cls: Type['Expression'],
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> 'Expression':
         if token.__class__ not in Expression._token2expression_map:
+            print(81)
             raise MissingExpressionError(token)
         
-        return Expression._token2expression_map[token.__class__].from_token(token, prev_expr, iter)
+        return Expression._token2expression_map[token.__class__].from_token(token, prev_expr, token_iter)
     
     @abstractmethod
     def evaluate(self, scope: 'ExecutionScope') -> Any:
@@ -98,7 +99,7 @@ class LiteralExpression(Expression, ABC):
         self, 
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> None:
         self.value = token
     
@@ -111,9 +112,9 @@ class LiteralExpression(Expression, ABC):
         cls: Type['LiteralExpression'],
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> "LiteralExpression":
-        return cls(token, prev_expr, iter)
+        return cls(token, prev_expr, token_iter)
 
 
 class GroupExpression(Expression):
@@ -124,13 +125,13 @@ class GroupExpression(Expression):
         self, 
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> None:
         self.expr = None
-        for token in iter:
+        for token in token_iter:
             if token.lexeme == ")":
                 break
-            self.expr = Expression.from_token(token, self.expr, iter)
+            self.expr = Expression.from_token(token, self.expr, token_iter)
         
     def __str__(self) -> str:
         return f"(group {self.expr if self.expr else ''})"
@@ -140,9 +141,9 @@ class GroupExpression(Expression):
         cls: Type['GroupExpression'],
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> "GroupExpression":
-        return cls(token, prev_expr, iter)
+        return cls(token, prev_expr, token_iter)
 
     def evaluate(self, scope: 'ExecutionScope') -> Any:
         if self.expr:
@@ -159,7 +160,7 @@ class IdentifierExpression(Expression):
         self, 
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> None:
         self.name = token
     
@@ -168,9 +169,9 @@ class IdentifierExpression(Expression):
         cls: Type['IdentifierExpression'],
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> "IdentifierExpression":
-        return cls(token, prev_expr, iter)
+        return cls(token, prev_expr, token_iter)
 
     def evaluate(self, scope: 'ExecutionScope') -> Any:
         return scope.fetch_variable(self.name.lexeme).value
@@ -190,10 +191,10 @@ class UnaryExpression(Expression, ABC):
         self, 
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> None:
         self.operator = token
-        self.right = Expression.from_iter(iter, None)
+        self.right = Expression.from_iter(token_iter, None)
 
     def __str__(self) -> str:
         return f"({self.operator.lexeme} {self.right})"
@@ -203,16 +204,16 @@ class UnaryExpression(Expression, ABC):
         cls: Type['UnaryExpression'],
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> "Expression":
         if prev_expr:        
             right_most = UnaryExpression.__rightest_unary(prev_expr)
             if right_most and right_most.operator == token:
-                _self = cls(token, right_most.right, iter)
+                _self = cls(token, right_most.right, token_iter)
                 right_most.right = _self
                 return prev_expr
 
-        return cls(token, prev_expr, iter)
+        return cls(token, prev_expr, token_iter)
 
     @staticmethod
     def __rightest_unary(expr: Expression) -> Optional['UnaryExpression']:
@@ -235,11 +236,11 @@ class BinaryExpression(Expression, ABC):
         self, 
         token: 'Token', 
         prev_expr: 'Expression', 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> None:        
         self.operator = token
         self.left = prev_expr
-        self.right = Expression.from_iter(iter, None)
+        self.right = Expression.from_iter(token_iter, None)
 
     def __str__(self) -> str:
         return f"({self.operator.lexeme} {self.left} {self.right})"
@@ -249,24 +250,24 @@ class BinaryExpression(Expression, ABC):
         cls: Type['BinaryExpression'],
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> "Expression":
         if not prev_expr:
             raise MissingExpressionError(token)
         
-        return cls.__insert_self_node(token, prev_expr, iter)
+        return cls.__insert_self_node(token, prev_expr, token_iter)
 
     @classmethod
     def __insert_self_node(
         cls: Type['BinaryExpression'],
         token: 'Token', 
         current: 'Expression', 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> "Expression":
         if not hasattr(current, "right") or current._precedence > cls._precedence:
-            return cls(token, current, iter)
+            return cls(token, current, token_iter)
 
-        right_node = cls.__insert_self_node(token, current.right, iter)
+        right_node = cls.__insert_self_node(token, current.right, token_iter)
         if (
             (current.__class__ == right_node.__class__ and current._right_associative) or
             (right_node._precedence > current._precedence)
@@ -282,7 +283,15 @@ class BinaryExpression(Expression, ABC):
 
 class StatementExpression(Expression, ABC):
     "StatementExpression's from_token always consume all the way to end of expression" 
-    pass
+    
+    @classmethod
+    def from_token(
+        cls: Type[Self],
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        token_iter: Iterator['Token']
+    ) -> Self:
+        return cls(token, prev_expr, token_iter)
 
 # *********************************************** Literal ***********************************************
 class StringLiteralExpression(LiteralExpression):
@@ -483,24 +492,15 @@ class PrintExpression(StatementExpression):
         self, 
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> None:
         assert prev_expr is None
         assert token.lexeme == "print"
         
-        self.body = Expression.from_iter_till_semicolon(next(iter) ,iter)
+        self.body = Expression.from_iter_till_end(next(token_iter) ,token_iter)
     
     def __str__(self) -> str:
         return f"(print {self.body})"
-    
-    @classmethod
-    def from_token(
-        cls: Type['PrintExpression'],
-        token: 'Token', 
-        prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
-    ) -> "PrintExpression":
-        return cls(token, prev_expr, iter)
     
     def evaluate(self, scope: 'ExecutionScope') -> Any:
         value = self.body.evaluate(scope)
@@ -521,12 +521,12 @@ class VarExpression(StatementExpression):
         self, 
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> None:
         assert prev_expr is None
         assert token.lexeme == "var"
         
-        expr = Expression.from_iter_till_semicolon(next(iter) ,iter)
+        expr = Expression.from_iter_till_end(next(token_iter) ,token_iter)
         if isinstance(expr, AssignExpression):
             self.assignment = cast(AssignExpression, expr)
             assert self.assignment.left.__class__ == IdentifierExpression
@@ -538,15 +538,6 @@ class VarExpression(StatementExpression):
     
     def __str__(self) -> str:
         return f"(var {self.assignment if self.assignment else self.identifier})"
-    
-    @classmethod
-    def from_token(
-        cls: Type['VarExpression'],
-        token: 'Token', 
-        prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
-    ) -> "VarExpression":
-        return cls(token, prev_expr, iter)
     
     def evaluate(self, scope: 'ExecutionScope') -> Any:
         value = None
@@ -562,6 +553,55 @@ class VarExpression(StatementExpression):
         return self.identifier.left_value_evaluate(scope)
 
 
+class IfExpression(StatementExpression):
+    __slots__ = ["predicates", "expression"]
+    predicates: Expression
+    expression: Expression
+    
+    def __init__(
+        self, 
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        token_iter: Iterator['Token']
+    ) -> None:
+        assert prev_expr is None
+        assert token.lexeme == "if"
+        
+        token = next(token_iter)
+        assert token.lexeme == "("
+        self.predicates = Expression.from_token(token, None, token_iter)
+        self.expression = Expression.from_iter_till_end(next(token_iter), token_iter)
+
+    def __str__(self) -> str:
+        return f"if {self.predicates} \n {self.expression}"
+    
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
+        scope.prev_if_result = self.predicates.evaluate(scope)
+        if scope.prev_if_result:
+            self.expression.evaluate(scope)
+
+class ElseExpression(StatementExpression):
+    __slots__ = ["expression"]
+    expression: Expression
+
+    def __init__(
+        self, 
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        token_iter: Iterator['Token']
+    ) -> None:
+        assert prev_expr is None
+        assert token.lexeme == "else"
+        
+        self.expression = Expression.from_iter_till_end(next(token_iter), token_iter)
+
+    def __str__(self) -> str:
+        return f"else\n{self.expression}"
+    
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
+        if not scope.prev_if_result:
+            self.expression.evaluate(scope)
+    
 
 # *********************************************** Util ***********************************************
 def _is_number(obj: Any):
@@ -577,9 +617,9 @@ class MinusNegativeExpressionRouter(Expression, ABC):
     def from_token(
         token: 'Token', 
         prev_expr: Optional['Expression'], 
-        iter: Iterator['Token']
+        token_iter: Iterator['Token']
     ) -> 'Expression':
         if prev_expr is None:
-            return NegativeExpression.from_token(token, None, iter)
+            return NegativeExpression.from_token(token, None, token_iter)
         else:
-            return MinusExpression.from_token(token, prev_expr, iter)
+            return MinusExpression.from_token(token, prev_expr, token_iter)
