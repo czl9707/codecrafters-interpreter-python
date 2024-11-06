@@ -1,10 +1,12 @@
 from argparse import ArgumentParser, Namespace
 import sys
 
+
+from .expressions import Expression
 from .tokens import Tokenizer
 from .parse import Parser
 from .execution import ExecutionScope
-from .utils import RuntimeError
+from .utils import RuntimeError, ParserBaseError
 
 def main():
     args = parse_args()
@@ -54,22 +56,27 @@ def print_evalute_result(ns: Namespace) -> None:
     with open(ns.file) as fd:
         file_contents = fd.read()
     
-    parser = Parser(file_contents)
-    scope = ExecutionScope()
     try:
-        for expression in parser:
-            value = expression.evaluate(scope)
-            if isinstance(value, bool):
-                print(str(value).lower())
-            elif value is None:
+        token_iter = iter(Tokenizer(file_contents))
+        scope = ExecutionScope()
+        expression = None
+        for token in token_iter:
+            expression = Expression.from_token(token, expression, token_iter)
+        if expression:
+            result = expression.evaluate(scope)
+            
+            if isinstance(result, bool):
+                print(str(result).lower())
+            elif result is None:
                 print("nil")
             else:
-                print(value)
+                print(result)
+
     except RuntimeError as e:
         print(e, file=sys.stderr)
         exit(70)
-    
-    if parser.error:
+    except ParserBaseError as e:
+        print(f"[line 1] {e}", file=sys.stderr)
         exit(65)
 
 
