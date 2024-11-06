@@ -522,6 +522,7 @@ class VarExpression(StatementExpression):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
+        self.assignment = None
         assert prev_expr is None
         assert token.lexeme == "var"
         
