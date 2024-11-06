@@ -44,11 +44,15 @@ def print_parse_result(ns: Namespace) -> None:
     with open(ns.file) as fd:
         file_contents = fd.read()
     
-    parser = Parser(file_contents)
-    for expression in parser:
-        print(expression)
-    
-    if parser.error:
+    try:
+        token_iter = iter(Tokenizer(file_contents))
+        expression = None
+        for token in token_iter:
+            if isinstance(token, EOFSymbol):
+                break
+            expression = Expression.from_token(token, expression, token_iter)
+    except ParserBaseError as e:
+        print(f"[line 1] {e}", file=sys.stderr)
         exit(65)
 
 
