@@ -581,7 +581,7 @@ class IfExpression(StatementExpression):
         return f"if {self.predicates} \n {self.expression}"
     
     def evaluate(self, scope: 'ExecutionScope') -> Any:
-        scope.prev_if_result = self.predicates.evaluate(scope)
+        scope.prev_if_result = _is_truthy(self.predicates.evaluate(scope))
         if scope.prev_if_result:
             self.expression.evaluate(scope)
 
