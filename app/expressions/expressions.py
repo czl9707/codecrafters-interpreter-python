@@ -733,12 +733,12 @@ class ForExpression(StatementExpression):
 
         token = next(token_iter)
         self.initialization = EMPTY_SCOPE if isinstance(token, SemicolonSymbol) else Expression.from_iter_till_end(token, None, token_iter)
-        if isinstance(self.initialization, StatementExpression):
+        if isinstance(self.initialization, Scope):
             raise MissingExpressionError(token)
         
         token = next(token_iter)
         self.predicates = EMPTY_SCOPE if isinstance(token, SemicolonSymbol) else Expression.from_iter_till_end(token, None, token_iter)
-        if isinstance(self.predicates, StatementExpression):
+        if isinstance(self.predicates, Scope):
             raise MissingExpressionError(token)
         
         self.step = EMPTY_SCOPE
@@ -746,7 +746,7 @@ class ForExpression(StatementExpression):
             if isinstance(token, RightParenthesisSymbol):
                 break
             self.step = Expression.from_token(token, self.step, token_iter)
-        if isinstance(self.step, StatementExpression):
+        if isinstance(self.step, Scope):
             raise MissingExpressionError(token)
         
         token = next(token_iter)
