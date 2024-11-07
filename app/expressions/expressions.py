@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Self, Callable, Iterator, Optional, Type, Union, cast
 
+from app.tokens.tokens import SemicolonSymbol
+
 from ..tokens import (
     AndReservedWord, 
     BangEqualSymbol, 
@@ -15,6 +17,7 @@ from ..tokens import (
     LeftBraceSymbol, 
     RightBraceSymbol,
     LeftParenthesisSymbol, 
+    RightParenthesisSymbol,
     LessEqualSymbol, 
     LessSymbol, 
     MinusSymbol, 
@@ -104,7 +107,7 @@ class Expression(ABC):
         while token:
             if token.lexeme == ";":
                 if expression is prev_expr:
-                    return EMPTY_SCOPE
+                    raise MissingExpressionError(token)
                 return cast('Expression', expression)
             
             expression = Expression.from_token(token, expression, token_iter)
@@ -712,15 +715,18 @@ class ForExpression(StatementExpression):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
-        assert token.lexeme == "for"
+        assert isinstance(token, ForReservedWord)
         
         token = next(token_iter)
-        assert token.lexeme == "("
-        self.initialization = Expression.from_iter_till_end(next(token_iter), None, token_iter)
-        self.predicates = Expression.from_iter_till_end(next(token_iter), None, token_iter)
+        assert isinstance(token, LeftParenthesisSymbol)
+
+        token = next(token_iter)
+        self.initialization = EMPTY_SCOPE if isinstance(token, SemicolonSymbol) else Expression.from_iter_till_end(token, None, token_iter)
+        token = next(token_iter)
+        self.predicates = EMPTY_SCOPE if isinstance(token, SemicolonSymbol) else Expression.from_iter_till_end(token, None, token_iter)
         self.step = EMPTY_SCOPE
         for token in token_iter:
-            if token.lexeme == ")":
+            if isinstance(token, RightParenthesisSymbol):
                 break
             self.step = Expression.from_token(token, self.step, token_iter)
         
