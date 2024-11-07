@@ -414,7 +414,7 @@ class AndExpression(BinaryExpression):
 class OrExpression(BinaryExpression):
     def evaluate(self, scope: 'ExecutionScope') -> bool:
         left_result = self.left.evaluate(scope)
-        if not _is_truthy(left_result):
+        if _is_truthy(left_result):
             return left_result
         return self.right.evaluate(scope)
     
