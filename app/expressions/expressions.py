@@ -635,7 +635,11 @@ class IfExpression(StatementExpression):
         token = next(token_iter)
         assert token.lexeme == "("
         self.predicates = Expression.from_token(token, None, token_iter)
-        self.expression = Expression.from_iter_till_end(next(token_iter), None, token_iter)
+        token = next(token_iter)
+        if isinstance(token, VarReservedWord):
+            raise MissingExpressionError(token)
+        self.expression = Expression.from_iter_till_end(token, None, token_iter)
+        
 
     def __str__(self) -> str:
         return f"if {self.predicates} \n {self.expression}"
@@ -665,7 +669,10 @@ class ElseExpression(StatementExpression):
         )
         assert token.lexeme == "else"        
         
-        self.expression = Expression.from_iter_till_end(next(token_iter), None, token_iter)
+        token = next(token_iter)
+        if isinstance(token, VarReservedWord):
+            raise MissingExpressionError(token)
+        self.expression = Expression.from_iter_till_end(token, None, token_iter)
 
     def __str__(self) -> str:
         return f"else\n{self.expression}"
@@ -692,7 +699,11 @@ class WhileExpression(StatementExpression):
         token = next(token_iter)
         assert token.lexeme == "("
         self.predicates = Expression.from_token(token, None, token_iter)
-        self.expression = Expression.from_iter_till_end(next(token_iter), None, token_iter)
+        
+        token = next(token_iter)
+        if isinstance(token, VarReservedWord):
+            raise MissingExpressionError(token)
+        self.expression = Expression.from_iter_till_end(token, None, token_iter)
 
     def __str__(self) -> str:
         return f"while {self.predicates} \n {self.expression}"
@@ -722,15 +733,26 @@ class ForExpression(StatementExpression):
 
         token = next(token_iter)
         self.initialization = EMPTY_SCOPE if isinstance(token, SemicolonSymbol) else Expression.from_iter_till_end(token, None, token_iter)
+        if isinstance(self.initialization, StatementExpression):
+            raise MissingExpressionError(token)
+        
         token = next(token_iter)
         self.predicates = EMPTY_SCOPE if isinstance(token, SemicolonSymbol) else Expression.from_iter_till_end(token, None, token_iter)
+        if isinstance(self.predicates, StatementExpression):
+            raise MissingExpressionError(token)
+        
         self.step = EMPTY_SCOPE
         for token in token_iter:
             if isinstance(token, RightParenthesisSymbol):
                 break
             self.step = Expression.from_token(token, self.step, token_iter)
+        if isinstance(self.step, StatementExpression):
+            raise MissingExpressionError(token)
         
-        self.expression = Expression.from_iter_till_end(next(token_iter), None, token_iter)
+        token = next(token_iter)
+        if isinstance(token, VarReservedWord):
+            raise MissingExpressionError(token)
+        self.expression = Expression.from_iter_till_end(token, None, token_iter)
 
     def __str__(self) -> str:
         return f"for ({self.initialization};{self.predicates};{self.step}) \n {self.expression}"
@@ -748,7 +770,7 @@ class ForExpression(StatementExpression):
 
 # Scope token will generate a this guy
 @yield_from(LeftBraceSymbol)
-class Scope(StatementExpression):
+class Scope(Expression):
     __slots__=["children"]
     children: list[Expression]
     
@@ -773,6 +795,14 @@ class Scope(StatementExpression):
         
         raise MissingScopeExpressionError()
 
+    @classmethod
+    def from_token(
+        cls: Type[Self],
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        token_iter: Iterator['Token']
+    ) -> Self:
+        return cls(token, prev_expr, token_iter)
                 
     def __str__(self) -> str:
         return "\n".join([str(exp) for exp in self.children])
