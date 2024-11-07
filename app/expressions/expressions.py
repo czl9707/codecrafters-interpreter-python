@@ -111,7 +111,7 @@ class Expression(ABC):
                 return cast('Expression', expression)
             
             expression = Expression.from_token(token, expression, token_iter)
-            if isinstance(expression, StatementExpression):
+            if isinstance(expression, StatementExpression) or isinstance(expression, Scope):
                 return expression
             token = next(token_iter)
 
