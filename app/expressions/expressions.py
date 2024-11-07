@@ -50,9 +50,10 @@ class Expression(ABC):
     @staticmethod
     def from_iter_till_end(
         token: 'Token',
+        prev_expr: Optional['Expression'],
         token_iter: Iterator['Token']
     ) -> 'Expression':
-        expression = None
+        expression = prev_expr
         
         while token:
             if token.lexeme == ";":
@@ -402,13 +403,20 @@ class MultiplyExpression(BinaryExpression):
     
 
 class AndExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExecutionScope') -> bool:        
-        return self.left.evaluate(scope) and self.right.evaluate(scope) 
+    def evaluate(self, scope: 'ExecutionScope') -> bool:   
+        left_result = self.left.evaluate(scope)
+        if not _is_truthy(left_result):
+            return False
+              
+        return self.right.evaluate(scope) 
 
 
 class OrExpression(BinaryExpression):
-    def evaluate(self, scope: 'ExecutionScope') -> bool:        
-        return self.left.evaluate(scope) or self.right.evaluate(scope)
+    def evaluate(self, scope: 'ExecutionScope') -> bool:
+        left_result = self.left.evaluate(scope)
+        if not _is_truthy(left_result):
+            return left_result
+        return self.right.evaluate(scope)
     
 
 @precedence(1)
@@ -493,10 +501,9 @@ class PrintExpression(StatementExpression):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
-        assert prev_expr is None
         assert token.lexeme == "print"
         
-        self.body = Expression.from_iter_till_end(next(token_iter) ,token_iter)
+        self.body = Expression.from_iter_till_end(next(token_iter), prev_expr, token_iter)
     
     def __str__(self) -> str:
         return f"(print {self.body})"
@@ -523,10 +530,9 @@ class VarExpression(StatementExpression):
         token_iter: Iterator['Token']
     ) -> None:
         self.assignment = None
-        assert prev_expr is None
         assert token.lexeme == "var"
         
-        expr = Expression.from_iter_till_end(next(token_iter) ,token_iter)
+        expr = Expression.from_iter_till_end(next(token_iter), prev_expr, token_iter)
         if isinstance(expr, AssignExpression):
             self.assignment = cast(AssignExpression, expr)
             assert self.assignment.left.__class__ == IdentifierExpression
@@ -564,13 +570,12 @@ class IfExpression(StatementExpression):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
-        assert prev_expr is None
         assert token.lexeme == "if"
         
         token = next(token_iter)
         assert token.lexeme == "("
         self.predicates = Expression.from_token(token, None, token_iter)
-        self.expression = Expression.from_iter_till_end(next(token_iter), token_iter)
+        self.expression = Expression.from_iter_till_end(next(token_iter), prev_expr, token_iter)
 
     def __str__(self) -> str:
         return f"if {self.predicates} \n {self.expression}"
@@ -590,10 +595,15 @@ class ElseExpression(StatementExpression):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
-        assert prev_expr is None
-        assert token.lexeme == "else"
+        assert (
+            isinstance(prev_expr, IfExpression) or (
+                isinstance(prev_expr, ElseExpression) and
+                isinstance(prev_expr.expression, IfExpression)
+            )
+        )
+        assert token.lexeme == "else"        
         
-        self.expression = Expression.from_iter_till_end(next(token_iter), token_iter)
+        self.expression = Expression.from_iter_till_end(next(token_iter), prev_expr, token_iter)
 
     def __str__(self) -> str:
         return f"else\n{self.expression}"
@@ -610,7 +620,10 @@ def _is_number(obj: Any):
 def _is_string(obj: Any):
     return obj.__class__ == str
 
-
+def _is_truthy(value: Any):
+    if value is None or value is False:
+        return False
+    return True
 
 class MinusNegativeExpressionRouter(Expression, ABC):
     @staticmethod

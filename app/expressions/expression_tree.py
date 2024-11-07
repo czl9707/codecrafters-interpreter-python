@@ -18,18 +18,17 @@ class ExpressionTree(StatementExpression):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
-        assert prev_expr is None
         self.children = []
         
+        expression = None
         assert token.lexeme == "{"
         token = next(token_iter)
         while token:
             if token.lexeme == "}":
                 return
             
-            self.children.append(
-                Expression.from_iter_till_end(token, token_iter)
-            )
+            expression = Expression.from_iter_till_end(token, expression, token_iter)
+            self.children.append(expression)
             token = next(token_iter)
         
         raise MissingScopeExpressionError()
@@ -59,17 +58,16 @@ class RootExpressionTree(ExpressionTree):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
-        assert prev_expr is None
         self.children = []
         
+        expression = None
         token = next(token_iter)
         while token:
             if token.token_type == "EOF":
                 return
             
-            self.children.append(
-                Expression.from_iter_till_end(token, token_iter)
-            )
+            expression = Expression.from_iter_till_end(token, expression, token_iter)
+            self.children.append(expression)
             token = next(token_iter)
         
         raise MissingScopeExpressionError()
