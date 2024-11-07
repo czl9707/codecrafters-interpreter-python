@@ -34,6 +34,7 @@ from ..expressions import (
     AssignExpression,
     IfExpression,
     ElseExpression,
+    WhileExpression,
     
     ExpressionTree,
 )
@@ -367,6 +368,7 @@ class VarReservedWord(ReservedWord):
     token_type = "VAR"
     lexeme = "var"
 
+@WhileExpression.yield_from
 class WhileReservedWord(ReservedWord):
     token_type = "WHILE"
     lexeme = "while"

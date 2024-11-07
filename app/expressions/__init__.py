@@ -34,6 +34,7 @@ __all__ = [
     IdentifierExpression.__name__,
     IfExpression.__name__,
     ElseExpression.__name__,
+    WhileExpression.__name__,
     AssignExpression.__name__,
     
     ExpressionTree.__name__,

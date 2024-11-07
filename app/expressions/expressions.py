@@ -611,7 +611,32 @@ class ElseExpression(StatementExpression):
     def evaluate(self, scope: 'ExecutionScope') -> Any:
         if not scope.prev_if_result:
             self.expression.evaluate(scope)
+
+class WhileExpression(StatementExpression):
+    __slots__ = ["predicates", "expression"]
+    predicates: Expression
+    expression: Expression
     
+    def __init__(
+        self, 
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        token_iter: Iterator['Token']
+    ) -> None:
+        assert token.lexeme == "while"
+        
+        token = next(token_iter)
+        assert token.lexeme == "("
+        self.predicates = Expression.from_token(token, None, token_iter)
+        self.expression = Expression.from_iter_till_end(next(token_iter), prev_expr, token_iter)
+
+    def __str__(self) -> str:
+        return f"while {self.predicates} \n {self.expression}"
+    
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
+        while _is_truthy(self.predicates.evaluate(scope)):
+            self.expression.evaluate(scope)
+
 
 # *********************************************** Util ***********************************************
 def _is_number(obj: Any):
