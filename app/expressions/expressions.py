@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Self, Callable, Iterator, Optional, Type, Union, cast
 
-from app.tokens.tokens import SemicolonSymbol
-
 from ..tokens import (
     AndReservedWord, 
     BangEqualSymbol, 
@@ -34,6 +32,8 @@ from ..tokens import (
     WhileReservedWord,
     Identifier,
     ForReservedWord,
+    EOFSymbol, 
+    SemicolonSymbol,
 )
 from ..utils import (
     MissingScopeExpressionError, 
@@ -105,7 +105,7 @@ class Expression(ABC):
         expression = prev_expr
         
         while token:
-            if token.lexeme == ";":
+            if isinstance(token, SemicolonSymbol):
                 if expression is prev_expr:
                     raise MissingExpressionError(token)
                 return cast('Expression', expression)
@@ -172,7 +172,7 @@ class GroupExpression(Expression):
     ) -> None:
         self.expr = None
         for token in token_iter:
-            if token.lexeme == ")":
+            if isinstance(token, RightParenthesisSymbol):
                 break
             self.expr = Expression.from_token(token, self.expr, token_iter)
         
@@ -559,7 +559,7 @@ class PrintExpression(StatementExpression):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
-        assert token.lexeme == "print"
+        assert isinstance(token, PrintReservedWord)
         
         self.body = Expression.from_iter_till_end(next(token_iter), None, token_iter)
     
@@ -589,7 +589,7 @@ class VarExpression(StatementExpression):
         token_iter: Iterator['Token']
     ) -> None:
         self.assignment = None
-        assert token.lexeme == "var"
+        assert isinstance(token, VarReservedWord)
         
         expr = Expression.from_iter_till_end(next(token_iter), None, token_iter)
         if isinstance(expr, AssignExpression):
@@ -630,10 +630,10 @@ class IfExpression(StatementExpression):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
-        assert token.lexeme == "if"
+        assert isinstance(token, IfReservedWord)
         
         token = next(token_iter)
-        assert token.lexeme == "("
+        assert isinstance(token, LeftParenthesisSymbol)
         self.predicates = Expression.from_token(token, None, token_iter)
         token = next(token_iter)
         if isinstance(token, VarReservedWord):
@@ -667,7 +667,7 @@ class ElseExpression(StatementExpression):
                 isinstance(prev_expr.expression, IfExpression)
             )
         )
-        assert token.lexeme == "else"        
+        assert isinstance(token, ElseReservedWord)    
         
         token = next(token_iter)
         if isinstance(token, VarReservedWord):
@@ -694,10 +694,10 @@ class WhileExpression(StatementExpression):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
-        assert token.lexeme == "while"
+        assert isinstance(token, WhileReservedWord)
         
         token = next(token_iter)
-        assert token.lexeme == "("
+        assert isinstance(token, LeftParenthesisSymbol)
         self.predicates = Expression.from_token(token, None, token_iter)
         
         token = next(token_iter)
@@ -785,10 +785,10 @@ class Scope(Expression):
         self.children = []
         
         expression = None
-        assert token.lexeme == "{"
+        assert isinstance(token, LeftBraceSymbol)
         token = next(token_iter)
         while token:
-            if token.lexeme == "}":
+            if isinstance(token, RightBraceSymbol):
                 return
             
             expression = Expression.from_iter_till_end(token, expression, token_iter)
@@ -831,7 +831,7 @@ class RootScope(Scope):
         expression = None
         token = next(token_iter)
         while token:
-            if token.token_type == "EOF":
+            if isinstance(token, EOFSymbol):
                 return
             
             expression = Expression.from_iter_till_end(token, expression, token_iter)
