@@ -1,5 +1,4 @@
 from .expressions import *
-from .expression_tree import *
 
 __all__ = [
     Expression.__name__,
@@ -37,7 +36,8 @@ __all__ = [
     WhileExpression.__name__,
     AssignExpression.__name__,
     
-    ExpressionTree.__name__,
+    Scope.__name__,
+    RootScope.__name__,
 ]
 
 
