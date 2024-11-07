@@ -712,6 +712,8 @@ class WhileExpression(StatementExpression):
         while _is_truthy(self.predicates.evaluate(scope)):
             self.expression.evaluate(scope)
 
+NIL = NilLiteralExpression(NilReservedWord(), None, iter([]))
+
 @yield_from(ForReservedWord)
 class ForExpression(StatementExpression):
     __slots__ = ["initialization", "predicates", "step", "expression"]
@@ -732,16 +734,16 @@ class ForExpression(StatementExpression):
         assert isinstance(token, LeftParenthesisSymbol)
 
         token = next(token_iter)
-        self.initialization = EMPTY_SCOPE if isinstance(token, SemicolonSymbol) else Expression.from_iter_till_end(token, None, token_iter)
+        self.initialization = NIL if isinstance(token, SemicolonSymbol) else Expression.from_iter_till_end(token, None, token_iter)
         if isinstance(self.initialization, Scope):
             raise MissingExpressionError(token)
         
         token = next(token_iter)
-        self.predicates = EMPTY_SCOPE if isinstance(token, SemicolonSymbol) else Expression.from_iter_till_end(token, None, token_iter)
+        self.predicates = NIL if isinstance(token, SemicolonSymbol) else Expression.from_iter_till_end(token, None, token_iter)
         if isinstance(self.predicates, Scope):
             raise MissingExpressionError(token)
         
-        self.step = EMPTY_SCOPE
+        self.step = NIL
         for token in token_iter:
             if isinstance(token, RightParenthesisSymbol):
                 break
@@ -838,8 +840,6 @@ class RootScope(Scope):
         
         raise MissingScopeExpressionError()
     
-
-EMPTY_SCOPE = Scope(LeftBraceSymbol(), None, iter([RightBraceSymbol()]))
 
 # *********************************************** Util ***********************************************
 
