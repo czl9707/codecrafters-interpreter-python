@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Self, Callable, Iterator, Optional, Type, Union, cast
+from xmlrpc.client import boolean
+
+from app.tokens.tokens import CommaSymbol
 
 from ..tokens import (
     AndReservedWord, 
@@ -34,6 +37,7 @@ from ..tokens import (
     ForReservedWord,
     EOFSymbol, 
     SemicolonSymbol,
+    FunReservedWord,
 )
 from ..utils import (
     MissingScopeExpressionError, 
@@ -95,28 +99,6 @@ class Expression(ABC):
         token = next(token_iter)
         return Expression.from_token(token, prev_expr, token_iter)
     
-    
-    @staticmethod
-    def from_iter_till_end(
-        token: 'Token',
-        prev_expr: Optional['Expression'],
-        token_iter: Iterator['Token'],
-    ) -> 'Expression':
-        expression = prev_expr
-        
-        while token:
-            if isinstance(token, SemicolonSymbol):
-                if expression is prev_expr:
-                    raise MissingExpressionError(token)
-                return cast('Expression', expression)
-            
-            expression = Expression.from_token(token, expression, token_iter)
-            if isinstance(expression, StatementExpression) or isinstance(expression, Scope):
-                return expression
-            token = next(token_iter)
-
-        raise MissingExpressionError(token)
-    
     @classmethod
     @abstractmethod
     def from_token(
@@ -159,7 +141,6 @@ class LiteralExpression(Expression, ABC):
     ) -> "LiteralExpression":
         return cls(token, prev_expr, token_iter)
 
-@yield_from(LeftParenthesisSymbol)
 class GroupExpression(Expression):
     __slots__ = ["expr"]
     expr: Optional[Expression]
@@ -336,6 +317,60 @@ class StatementExpression(Expression, ABC):
     ) -> Self:
         return cls(token, prev_expr, token_iter)
 
+
+@yield_from(NilReservedWord)
+class NilLiteralExpression(LiteralExpression):
+    def __str__(self) -> str:
+        return self.value.lexeme
+
+    def evaluate(self, scope: 'ExecutionScope') -> None:
+        return None
+
+NIL = NilLiteralExpression(NilReservedWord(), None, iter([]))
+
+
+
+def expression_from_iter_till_end(
+    token: 'Token',
+    token_iter: Iterator['Token'],
+    prev_expr: Optional['Expression'] = None,
+) -> 'Expression':
+    expression = prev_expr
+    
+    while token:
+        if isinstance(token, SemicolonSymbol):
+            if expression is prev_expr:
+                raise MissingExpressionError(token)
+            return cast('Expression', expression)
+        
+        expression = Expression.from_token(token, expression, token_iter)
+        if isinstance(expression, StatementExpression) or isinstance(expression, AST):
+            return expression
+        token = next(token_iter)
+
+    raise MissingExpressionError(token)
+
+
+def expression_from_iter_till(
+    token_iter: Iterator['Token'],
+    endTokenTypes: list[Type['Token']],
+    *,
+    allow_nil: boolean  = False
+) -> 'Expression':
+    exp: Optional['Expression'] = None
+    for token in token_iter:
+        if any(isinstance(token, T) for T in endTokenTypes):
+            break
+        exp = Expression.from_token(token, exp, token_iter)
+    
+    if exp is None: 
+        if allow_nil:
+            return NIL
+        raise MissingExpressionError(token)
+    return exp
+
+
+
 # *********************************************** Literal ***********************************************
 @yield_from(StringLiteral)
 class StringLiteralExpression(LiteralExpression):
@@ -363,14 +398,7 @@ class BooleanLiteralExpression(LiteralExpression):
 
     def evaluate(self, scope: 'ExecutionScope') -> bool:
         return self.value.lexeme == "true"
-    
-@yield_from(NilReservedWord)
-class NilLiteralExpression(LiteralExpression):
-    def __str__(self) -> str:
-        return self.value.lexeme
 
-    def evaluate(self, scope: 'ExecutionScope') -> None:
-        return None
 
 # *********************************************** Unary ***********************************************
 @precedence(5)
@@ -561,7 +589,7 @@ class PrintExpression(StatementExpression):
     ) -> None:
         assert isinstance(token, PrintReservedWord)
         
-        self.body = Expression.from_iter_till_end(next(token_iter), None, token_iter)
+        self.body = expression_from_iter_till_end(next(token_iter), token_iter)
     
     def __str__(self) -> str:
         return f"(print {self.body})"
@@ -591,7 +619,7 @@ class VarExpression(StatementExpression):
         self.assignment = None
         assert isinstance(token, VarReservedWord)
         
-        expr = Expression.from_iter_till_end(next(token_iter), None, token_iter)
+        expr = expression_from_iter_till_end(next(token_iter), token_iter)
         if isinstance(expr, AssignExpression):
             self.assignment = cast(AssignExpression, expr)
             assert self.assignment.left.__class__ == IdentifierExpression
@@ -638,7 +666,7 @@ class IfExpression(StatementExpression):
         token = next(token_iter)
         if isinstance(token, VarReservedWord):
             raise MissingExpressionError(token)
-        self.expression = Expression.from_iter_till_end(token, None, token_iter)
+        self.expression = expression_from_iter_till_end(token, token_iter)
         
 
     def __str__(self) -> str:
@@ -672,7 +700,7 @@ class ElseExpression(StatementExpression):
         token = next(token_iter)
         if isinstance(token, VarReservedWord):
             raise MissingExpressionError(token)
-        self.expression = Expression.from_iter_till_end(token, None, token_iter)
+        self.expression = expression_from_iter_till_end(token, token_iter)
 
     def __str__(self) -> str:
         return f"else\n{self.expression}"
@@ -703,7 +731,7 @@ class WhileExpression(StatementExpression):
         token = next(token_iter)
         if isinstance(token, VarReservedWord):
             raise MissingExpressionError(token)
-        self.expression = Expression.from_iter_till_end(token, None, token_iter)
+        self.expression = expression_from_iter_till_end(token, token_iter)
 
     def __str__(self) -> str:
         return f"while {self.predicates} \n {self.expression}"
@@ -712,7 +740,6 @@ class WhileExpression(StatementExpression):
         while _is_truthy(self.predicates.evaluate(scope)):
             self.expression.evaluate(scope)
 
-NIL = NilLiteralExpression(NilReservedWord(), None, iter([]))
 
 @yield_from(ForReservedWord)
 class ForExpression(StatementExpression):
@@ -733,28 +760,22 @@ class ForExpression(StatementExpression):
         token = next(token_iter)
         assert isinstance(token, LeftParenthesisSymbol)
 
-        token = next(token_iter)
-        self.initialization = NIL if isinstance(token, SemicolonSymbol) else Expression.from_iter_till_end(token, None, token_iter)
-        if isinstance(self.initialization, Scope):
+        self.initialization = expression_from_iter_till(token_iter, [SemicolonSymbol], allow_nil=True)
+        if isinstance(self.initialization, AST):
             raise MissingExpressionError(token)
         
-        token = next(token_iter)
-        self.predicates = NIL if isinstance(token, SemicolonSymbol) else Expression.from_iter_till_end(token, None, token_iter)
-        if isinstance(self.predicates, Scope):
+        self.predicates = expression_from_iter_till(token_iter, [SemicolonSymbol], allow_nil=True)
+        if isinstance(self.predicates, AST):
             raise MissingExpressionError(token)
         
-        self.step = NIL
-        for token in token_iter:
-            if isinstance(token, RightParenthesisSymbol):
-                break
-            self.step = Expression.from_token(token, self.step, token_iter)
-        if isinstance(self.step, Scope):
+        self.step = expression_from_iter_till(token_iter, [RightParenthesisSymbol], allow_nil=True)
+        if isinstance(self.step, AST):
             raise MissingExpressionError(token)
         
         token = next(token_iter)
         if isinstance(token, VarReservedWord):
             raise MissingExpressionError(token)
-        self.expression = Expression.from_iter_till_end(token, None, token_iter)
+        self.expression = expression_from_iter_till_end(token, token_iter)
 
     def __str__(self) -> str:
         return f"for ({self.initialization};{self.predicates};{self.step}) \n {self.expression}"
@@ -768,11 +789,60 @@ class ForExpression(StatementExpression):
             self.expression.evaluate(scope)
             self.step.evaluate(scope)
 
-# *********************************************** Scope ***********************************************
+@yield_from(FunReservedWord)
+class FunctiontDefinitionExpression(StatementExpression):
+    __slots__ = ["name", "parameters", "expression", "closure"]
+    name: str
+    parameters: list[str]
+    expression: Expression
+    closure: 'ExecutionScope'
 
-# Scope token will generate a this guy
+    
+    def __init__(
+        self, 
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        token_iter: Iterator['Token']
+    ) -> None:
+        assert isinstance(token, FunReservedWord)
+        token = next(token_iter)
+        assert isinstance(token, Identifier)
+        self.name = token.lexeme
+        
+        token = next(token_iter)
+        assert isinstance(token, LeftParenthesisSymbol)
+        self.parameters = []
+        
+        for token in token_iter:
+            if isinstance(token, RightParenthesisSymbol):
+                break
+            
+            assert isinstance(token, Identifier)
+            self.parameters.append(token.lexeme)
+            token = next(token_iter)
+            if isinstance(token, RightParenthesisSymbol):
+                break
+            if isinstance(token, CommaSymbol):
+                continue
+            else:
+                raise MissingExpressionError(token)
+        
+        self.expression = expression_from_iter_till_end(token, token_iter)
+
+    def __str__(self) -> str:
+        return f"fun {self.name} ({', '.join(self.parameters)}) \n {self.expression}"
+    
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
+        self.closure = scope.clone()
+        var = scope.create_variable(self.name)
+        var.value = self
+
+    
+# *********************************************** AST ***********************************************
+
+# AST token will generate a this guy
 @yield_from(LeftBraceSymbol)
-class Scope(Expression):
+class AST(Expression):
     __slots__=["children"]
     children: list[Expression]
     
@@ -784,14 +854,14 @@ class Scope(Expression):
     ) -> None:
         self.children = []
         
-        expression = None
+        expression: Expression = NIL
         assert isinstance(token, LeftBraceSymbol)
         token = next(token_iter)
         while token:
             if isinstance(token, RightBraceSymbol):
                 return
             
-            expression = Expression.from_iter_till_end(token, expression, token_iter)
+            expression = expression_from_iter_till_end(token, token_iter, expression)
             self.children.append(expression)
             token = next(token_iter)
         
@@ -816,7 +886,7 @@ class Scope(Expression):
 
 
 # passing in dummy token to avoid { as the first token
-class RootScope(Scope):
+class RootAST(AST):
     __slots__=["children"]
     children: list[Expression]
     
@@ -828,18 +898,75 @@ class RootScope(Scope):
     ) -> None:
         self.children = []
         
-        expression = None
+        expression: Expression = NIL
         token = next(token_iter)
         while token:
             if isinstance(token, EOFSymbol):
                 return
             
-            expression = Expression.from_iter_till_end(token, expression, token_iter)
+            expression = expression_from_iter_till_end(token, token_iter, expression)
             self.children.append(expression)
             token = next(token_iter)
         
         raise MissingScopeExpressionError()
+
+
+# *********************************************** Call ***********************************************
+class FunctionCallExpression(Expression):
+    __slots__ = ["identifier", "call_parameters"]
+    identifier: IdentifierExpression
+    call_parameters : list[Expression]
     
+    def __init__(
+        self, 
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        token_iter: Iterator['Token']
+    ) -> None:
+        assert isinstance(prev_expr, IdentifierExpression)
+        assert isinstance(token, LeftParenthesisSymbol)
+        
+        self.identifier = prev_expr
+        self.call_parameters = []
+        
+        param: Optional[Expression] = None 
+        for token in token_iter:
+            if isinstance(token, CommaSymbol):
+                if param is None:
+                    raise MissingExpressionError(token)
+                self.call_parameters.append(param)
+                param = None
+                continue
+            elif isinstance(token, RightParenthesisSymbol):
+                return
+            
+            param = Expression.from_token(token, param, token_iter)
+            
+    @classmethod
+    def from_token(
+        cls: Type[Self],
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        token_iter: Iterator['Token']
+    ) -> Self:
+        return cls(token, prev_expr, token_iter)
+                
+    def __str__(self) -> str:
+        return f"{self.identifier.name} ({','.join(str(p) for p in self.call_parameters)})"
+    
+    def evaluate(self, scope: 'ExecutionScope') -> None:
+        v = self.identifier.evaluate(scope)
+        assert isinstance(v, FunctiontDefinitionExpression)
+        funcdef = cast(FunctiontDefinitionExpression, v)
+        
+        func_scope = scope.clone()
+        for i in range(len(funcdef.parameters)):
+            var = func_scope.create_variable(funcdef.parameters[i])
+            var.value = self.call_parameters[i].evaluate(scope)
+        
+        funcdef.expression.evaluate(func_scope)
+
+
 
 # *********************************************** Util ***********************************************
 
@@ -867,3 +994,15 @@ class MinusNegativeExpressionRouter(Expression, ABC):
         else:
             return MinusExpression.from_token(token, prev_expr, token_iter)
         
+@yield_from(LeftParenthesisSymbol)
+class GroupFunctionCallExpressionRouter(Expression, ABC):
+    @staticmethod
+    def from_token(
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        token_iter: Iterator['Token']
+    ) -> 'Expression':
+        if isinstance(prev_expr, IdentifierExpression) or isinstance(prev_expr, FunctionCallExpression):
+            return FunctionCallExpression.from_token(token, None, token_iter)
+        else:
+            return GroupExpression.from_token(token, prev_expr, token_iter)

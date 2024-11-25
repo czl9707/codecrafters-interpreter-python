@@ -1,6 +1,8 @@
-from typing import Any, Optional, cast
+from typing import Optional, Union, cast, TYPE_CHECKING
 
 from ..utils import UndefinedVariableError, RuntimeError
+if TYPE_CHECKING:
+    from ..expressions import FunctiontDefinitionExpression
 
 
 class ExecutionContext:
@@ -45,11 +47,16 @@ class ExecutionScope:
 
     def create_child_scope(self) -> 'ExecutionScope':
         return ExecutionScope(self)
+    
+    def clone(self) -> 'ExecutionScope':
+        closure = ExecutionScope(self.parent)
+        closure._variables = {**self._variables}
+        return closure 
 
 
 class Variable:
     __slots__ = ["scope", "name", "value"]
-    value: Any
+    value: Union[int, float, str, None, bool, 'FunctiontDefinitionExpression']
     def __init__(self, scope: ExecutionScope, name: str) -> None:
         self.scope = scope
         self.name = name

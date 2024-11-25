@@ -3,7 +3,7 @@ from typing import Iterator
 
 from ..utils import ParserBaseError
 from ..tokens import Tokenizer, EOFSymbol
-from ..expressions import RootScope, Expression
+from ..expressions import RootAST, Expression
 
 class Parser:
     def __init__(self, s:str) -> None:
@@ -11,7 +11,7 @@ class Parser:
         self._error = False
         try:
             token_iter = iter(self.tokenizer)
-            self.ast = RootScope(
+            self.ast = RootAST(
                 EOFSymbol(), None, token_iter
             )
                     

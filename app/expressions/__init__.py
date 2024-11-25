@@ -35,9 +35,11 @@ __all__ = [
     ElseExpression.__name__,
     WhileExpression.__name__,
     AssignExpression.__name__,
+    FunctiontDefinitionExpression.__name__,
+    FunctionCallExpression.__name__,
     
-    Scope.__name__,
-    RootScope.__name__,
+    AST.__name__,
+    RootAST.__name__,
 ]
 
 

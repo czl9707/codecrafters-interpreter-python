@@ -23,7 +23,6 @@ def parse_args() -> Namespace:
     config_evaluate_parser(sub_parser.add_parser("evaluate"))
     config_execute_parser(sub_parser.add_parser("run"))
     
-    
     return arg_parser.parse_args()
 
 
