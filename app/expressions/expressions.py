@@ -3,7 +3,7 @@ from ast import unaryop
 from typing import TYPE_CHECKING, Any, Self, Callable, Iterator, Optional, Type, Union, cast
 from xmlrpc.client import boolean
 
-from app.tokens.tokens import CommaSymbol
+from app.tokens.tokens import CommaSymbol, ReturnReservedWord
 from app.utils.errors import FunctionScopeExpressionError
 
 from ..tokens import (
@@ -678,8 +678,8 @@ class IfExpression(StatementExpression):
         return f"if {self.predicates} \n {self.expression}"
     
     def evaluate(self, scope: 'ExecutionScope') -> Any:
-        scope.prev_if_result = _is_truthy(self.predicates.evaluate(scope))
-        if scope.prev_if_result:
+        scope.if_statement_predicate = _is_truthy(self.predicates.evaluate(scope))
+        if scope.if_statement_predicate:
             self.expression.evaluate(scope)
 
 
@@ -711,7 +711,7 @@ class ElseExpression(StatementExpression):
         return f"else\n{self.expression}"
     
     def evaluate(self, scope: 'ExecutionScope') -> Any:
-        if not scope.prev_if_result:
+        if not scope.if_statement_predicate:
             self.expression.evaluate(scope)
 
 
@@ -845,6 +845,29 @@ class FunctionDefinitionExpression(StatementExpression):
         var = scope.create_variable(self.name)
         var.value = self
 
+
+@yield_from(ReturnReservedWord)
+class ReturnExpression(StatementExpression):
+    __slots__= ["body"]
+    body: Expression
+    
+    def __init__(
+        self, 
+        token: 'Token', 
+        prev_expr: Optional['Expression'], 
+        token_iter: Iterator['Token']
+    ) -> None:
+        assert isinstance(token, ReturnReservedWord)
+        
+        self.body = expression_from_iter_till_end(next(token_iter), token_iter)
+    
+    def __str__(self) -> str:
+        return f"(return {self.body})"
+    
+    def evaluate(self, scope: 'ExecutionScope') -> Any:
+        value = self.body.evaluate(scope)
+        scope.function_return_value = (True, value)
+
     
 # *********************************************** AST ***********************************************
 
@@ -888,9 +911,13 @@ class AST(Expression):
         return "\n".join([str(exp) for exp in self.children])
     
     def evaluate(self, scope: 'ExecutionScope') -> None:
-        scope = scope.create_child_scope()
+        local_scope = scope.create_child_scope()
         for child in self.children:
-            child.evaluate(scope)
+            child.evaluate(local_scope)
+            if local_scope.function_return_value[0]:
+                scope.function_return_value = local_scope.function_return_value
+                return
+                
 
 
 # passing in dummy token to avoid { as the first token
@@ -964,7 +991,7 @@ class FunctionCallExpression(Expression):
         return cls(token, prev_expr, token_iter)
                 
     def __str__(self) -> str:
-        return f"{self.identifier.name} ({','.join(str(p) for p in self.call_parameters)})"
+        return f"{self.identifier.name.lexeme} ({','.join(str(p) for p in self.call_parameters)})"
     
     def evaluate(self, scope: 'ExecutionScope') -> None:
         v = self.identifier.evaluate(scope)
@@ -975,9 +1002,9 @@ class FunctionCallExpression(Expression):
         for i in range(len(funcdef.parameters)):
             var = func_scope.create_variable(funcdef.parameters[i])
             var.value = self.call_parameters[i].evaluate(scope)
-        
-        return funcdef.body.evaluate(func_scope)
-
+            
+        funcdef.body.evaluate(func_scope)
+        return func_scope.function_return_value[1]
 
 
 # *********************************************** Util ***********************************************

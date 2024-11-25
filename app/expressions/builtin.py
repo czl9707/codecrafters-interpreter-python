@@ -32,11 +32,13 @@ class BuiltInFunctionDefinitionExpression(FunctionDefinitionExpression):
 
 class ExpressionMixin:
     __slots__ = ["evaluate"]
-    def __init__(self, callback: Callable[['ExecutionScope'], Any]):
-        self.evaluate = callback
+    def __init__(self, callback: Callable[..., Any]):
+        def wrapped_callback(scope: 'ExecutionScope')-> None:
+            scope.function_return_value = (True, callback())
+        self.evaluate = wrapped_callback
                 
 
-def define_built_in_function(name: str, paramters: list[str], callback: Callable[['ExecutionScope'], Any], root_scope: 'ExecutionScope') -> BuiltInFunctionDefinitionExpression:
+def define_built_in_function(name: str, paramters: list[str], callback: Callable[..., Any], root_scope: 'ExecutionScope') -> BuiltInFunctionDefinitionExpression:
     expression = BuiltInFunctionDefinitionExpression(NilReservedWord(), None, iter([]))
     expression.name = name
     expression.parameters = paramters

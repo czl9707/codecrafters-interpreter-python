@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Union, cast
+from typing import Any, Optional, Union, cast
 
 from ..expressions import FunctionDefinitionExpression, define_built_in_function
 from ..utils import UndefinedVariableError, RuntimeError
@@ -27,7 +27,8 @@ class ExecutionContext:
 
 class ExecutionScope:
     _variables: dict[str, 'Variable']
-    prev_if_result = False
+    if_statement_predicate = False
+    function_return_value: tuple[bool, Any] = (False, None)  # bool means returned or not, Any is return value
     
     def __init__(self, parent: Optional['ExecutionScope']=None) -> None:
         self.parent = parent
@@ -38,7 +39,7 @@ class ExecutionScope:
             self._variables["clock"].value = define_built_in_function(
                 "clock", 
                 [], 
-                lambda _: int(datetime.now().timestamp()), 
+                lambda: int(datetime.now().timestamp()), 
                 self
             )
     
