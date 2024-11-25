@@ -866,7 +866,7 @@ class ReturnExpression(StatementExpression):
     ) -> None:
         assert isinstance(token, ReturnReservedWord)
         
-        self.body = expression_from_iter_till_end(next(token_iter), token_iter)
+        self.body = expression_from_iter_till(token_iter, [SemicolonSymbol], allow_nil=True)
     
     def __str__(self) -> str:
         return f"(return {self.body})"
