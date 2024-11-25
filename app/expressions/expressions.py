@@ -935,7 +935,7 @@ class FunctionCallExpression(Expression):
         
         param: Optional[Expression] = None 
         for token in token_iter:
-            if isinstance(token, RightParenthesisSymbol) and not self.call_parameters:
+            if not self.call_parameters and isinstance(token, RightParenthesisSymbol) and not param:
                 break
             if isinstance(token, CommaSymbol) or isinstance(token, RightParenthesisSymbol):
                 if param is None:
