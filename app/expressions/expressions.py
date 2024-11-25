@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from ast import unaryop
 from typing import TYPE_CHECKING, Any, Self, Callable, Iterator, Optional, Type, Union, cast
 from xmlrpc.client import boolean
 
@@ -1009,7 +1010,16 @@ class GroupFunctionCallExpressionRouter(Expression, ABC):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> 'Expression':
-        if isinstance(prev_expr, IdentifierExpression) or isinstance(prev_expr, FunctionCallExpression):
+        current_expr = prev_expr
+        parent_expr = None
+        while isinstance(current_expr, BinaryExpression) or isinstance(current_expr, UnaryExpression):
+            parent_expr = current_expr
+            current_expr = current_expr.right
+        
+        if isinstance(current_expr, IdentifierExpression) or isinstance(current_expr, FunctionCallExpression):
+            if parent_expr:
+                parent_expr.right = FunctionCallExpression.from_token(token, current_expr, token_iter)
+                return prev_expr # type: ignore
             return FunctionCallExpression.from_token(token, prev_expr, token_iter)
         else:
             return GroupExpression.from_token(token, prev_expr, token_iter)
