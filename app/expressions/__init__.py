@@ -1,4 +1,5 @@
 from .expressions import *
+from .builtin import *
 
 __all__ = [
     Expression.__name__,
@@ -40,6 +41,8 @@ __all__ = [
     
     AST.__name__,
     RootAST.__name__,
+
+    define_built_in_function.__name__,    
 ]
 
 

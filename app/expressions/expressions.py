@@ -358,10 +358,13 @@ def expression_from_iter_till(
     allow_nil: boolean  = False
 ) -> 'Expression':
     exp: Optional['Expression'] = None
+
     for token in token_iter:
         if any(isinstance(token, T) for T in endTokenTypes):
             break
         exp = Expression.from_token(token, exp, token_iter)
+        if isinstance(exp, StatementExpression) and (SemicolonSymbol in endTokenTypes):
+            return exp
     
     if exp is None: 
         if allow_nil:
@@ -791,12 +794,11 @@ class ForExpression(StatementExpression):
 
 @yield_from(FunReservedWord)
 class FunctiontDefinitionExpression(StatementExpression):
-    __slots__ = ["name", "parameters", "expression", "closure"]
+    __slots__ = ["name", "parameters", "body", "closure"]
     name: str
     parameters: list[str]
-    expression: Expression
+    body: Expression
     closure: 'ExecutionScope'
-
     
     def __init__(
         self, 
@@ -820,17 +822,18 @@ class FunctiontDefinitionExpression(StatementExpression):
             assert isinstance(token, Identifier)
             self.parameters.append(token.lexeme)
             token = next(token_iter)
+
             if isinstance(token, RightParenthesisSymbol):
                 break
-            if isinstance(token, CommaSymbol):
+            elif isinstance(token, CommaSymbol):
                 continue
             else:
                 raise MissingExpressionError(token)
         
-        self.expression = expression_from_iter_till_end(token, token_iter)
+        self.body = expression_from_iter_till_end(next(token_iter), token_iter)
 
     def __str__(self) -> str:
-        return f"fun {self.name} ({', '.join(self.parameters)}) \n {self.expression}"
+        return f"fun {self.name} ({', '.join(self.parameters)}) \n {self.body}"
     
     def evaluate(self, scope: 'ExecutionScope') -> Any:
         self.closure = scope.clone()
@@ -931,14 +934,18 @@ class FunctionCallExpression(Expression):
         
         param: Optional[Expression] = None 
         for token in token_iter:
-            if isinstance(token, CommaSymbol):
+            if isinstance(token, RightParenthesisSymbol) and not self.call_parameters:
+                break
+            if isinstance(token, CommaSymbol) or isinstance(token, RightParenthesisSymbol):
                 if param is None:
                     raise MissingExpressionError(token)
                 self.call_parameters.append(param)
                 param = None
-                continue
-            elif isinstance(token, RightParenthesisSymbol):
-                return
+
+                if isinstance(token, CommaSymbol):
+                    continue
+                else:
+                    break
             
             param = Expression.from_token(token, param, token_iter)
             
@@ -964,7 +971,7 @@ class FunctionCallExpression(Expression):
             var = func_scope.create_variable(funcdef.parameters[i])
             var.value = self.call_parameters[i].evaluate(scope)
         
-        funcdef.expression.evaluate(func_scope)
+        return funcdef.body.evaluate(func_scope)
 
 
 
@@ -1003,6 +1010,6 @@ class GroupFunctionCallExpressionRouter(Expression, ABC):
         token_iter: Iterator['Token']
     ) -> 'Expression':
         if isinstance(prev_expr, IdentifierExpression) or isinstance(prev_expr, FunctionCallExpression):
-            return FunctionCallExpression.from_token(token, None, token_iter)
+            return FunctionCallExpression.from_token(token, prev_expr, token_iter)
         else:
             return GroupExpression.from_token(token, prev_expr, token_iter)
