@@ -738,13 +738,16 @@ class WhileExpression(StatementExpression):
             raise MissingExpressionError(token)
         self.expression = expression_from_iter_till_end(token, token_iter)
 
+
     def __str__(self) -> str:
         return f"while {self.predicates} \n {self.expression}"
     
     def evaluate(self, scope: 'ExecutionScope') -> Any:
         while _is_truthy(self.predicates.evaluate(scope)):
+            if scope.function_return_value[0]:
+                break
             self.expression.evaluate(scope)
-
+            
 
 @yield_from(ForReservedWord)
 class ForExpression(StatementExpression):
@@ -790,9 +793,13 @@ class ForExpression(StatementExpression):
         while True:
             if not _is_truthy(self.predicates.evaluate(scope)):
                 break
+            if scope.function_return_value[0]:
+                break
             
             self.expression.evaluate(scope)
             self.step.evaluate(scope)
+            
+
 
 @yield_from(FunReservedWord)
 class FunctionDefinitionExpression(StatementExpression):
