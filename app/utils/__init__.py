@@ -7,4 +7,5 @@ __all__=[
     MissingExpressionError.__name__,
     UndefinedVariableError.__name__,
     MissingScopeExpressionError.__name__,
+    FunctionScopeExpressionError, __name__,
 ]

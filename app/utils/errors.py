@@ -41,7 +41,10 @@ class MissingExpressionError(ParserBaseError):
 class MissingScopeExpressionError(ParserBaseError):        
     def __str__(self) -> str:
         return super().__str__() + "Error at end: Expect '{' ."
-    
+
+class FunctionScopeExpressionError(ParserBaseError):
+    def __str__(self):
+        return super().__str__() + "Expect '{' before function body."
 
 class RuntimeError(BaseError):
     msg: str = "General RuntimeError"

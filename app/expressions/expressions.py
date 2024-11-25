@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Self, Callable, Iterator, Optional, Type,
 from xmlrpc.client import boolean
 
 from app.tokens.tokens import CommaSymbol
+from app.utils.errors import FunctionScopeExpressionError
 
 from ..tokens import (
     AndReservedWord, 
@@ -831,6 +832,9 @@ class FunctionDefinitionExpression(StatementExpression):
             else:
                 raise MissingExpressionError(token)
         
+        token = next(token_iter)
+        if not isinstance(token, LeftBraceSymbol):
+            raise FunctionScopeExpressionError(token)
         self.body = expression_from_iter_till_end(next(token_iter), token_iter)
 
     def __str__(self) -> str:
