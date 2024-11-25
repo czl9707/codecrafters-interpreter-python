@@ -835,7 +835,7 @@ class FunctionDefinitionExpression(StatementExpression):
         token = next(token_iter)
         if not isinstance(token, LeftBraceSymbol):
             raise FunctionScopeExpressionError(token)
-        self.body = expression_from_iter_till_end(next(token_iter), token_iter)
+        self.body = expression_from_iter_till_end(token, token_iter)
 
     def __str__(self) -> str:
         return f"<fn {self.name}>"
