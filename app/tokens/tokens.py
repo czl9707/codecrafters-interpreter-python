@@ -22,13 +22,6 @@ class Token(ABC):
         return False
 
     @staticmethod
-    def is_reserved_word(cp: CharacterProvider) -> bool:
-        for l in range(6, 1, -1):
-            if cp.top(l) in Token._type2reserved_class:
-                return True
-        return False
-            
-    @staticmethod
     def is_identifier(cp: CharacterProvider) -> bool:
         return cp.top().isalnum() or cp.top() == "_"
     
@@ -44,14 +37,15 @@ class Token(ABC):
     def from_iter(cls, cp: CharacterProvider) -> "Token":
         if Token.is_symbol(cp):
             return Symbol.from_iter(cp)
-        elif Token.is_reserved_word(cp):
-            return ReservedWord.from_iter(cp)
         elif Token.is_string_literal(cp):
             return StringLiteral.from_iter(cp)
         elif Token.is_number_literal(cp):
             return NumberLiteral.from_iter(cp)
         elif Token.is_identifier(cp):
-            return Identifier.from_iter(cp)
+            iden = Identifier.from_iter(cp)
+            if iden.is_reserved_word():
+                return iden.as_reserved_word()
+            return iden
 
         raise UnexpectedCharacterError(cp.forward())
     
@@ -85,7 +79,12 @@ class Identifier(Token):
             s += cp.forward()
         
         return Identifier(s)
- 
+    
+    def is_reserved_word(self) -> bool:
+        return self.lexeme in Token._type2reserved_class
+    
+    def as_reserved_word(self) -> 'ReservedWord':
+        return Token._type2reserved_class[self.lexeme]()
     
 class StringLiteral(Token):
     token_type = "STRING"

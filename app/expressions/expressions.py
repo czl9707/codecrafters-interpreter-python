@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
-from ast import unaryop
 from typing import TYPE_CHECKING, Any, Self, Callable, Iterator, Optional, Type, Union, cast
-from xmlrpc.client import boolean
 
 from app.tokens.tokens import CommaSymbol, ReturnReservedWord
 from app.utils.errors import FunctionScopeExpressionError
@@ -357,7 +355,7 @@ def expression_from_iter_till(
     token_iter: Iterator['Token'],
     endTokenTypes: list[Type['Token']],
     *,
-    allow_nil: boolean  = False
+    allow_nil: bool  = False
 ) -> 'Expression':
     exp: Optional['Expression'] = None
 
@@ -965,7 +963,7 @@ class FunctionCallExpression(Expression):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
-        assert isinstance(prev_expr, IdentifierExpression)
+        assert isinstance(prev_expr, IdentifierExpression) or isinstance(prev_expr, FunctionCallExpression)
         assert isinstance(token, LeftParenthesisSymbol)
         
         self.identifier = prev_expr
