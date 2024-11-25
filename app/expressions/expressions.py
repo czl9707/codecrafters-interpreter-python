@@ -794,7 +794,7 @@ class ForExpression(StatementExpression):
             self.step.evaluate(scope)
 
 @yield_from(FunReservedWord)
-class FunctiontDefinitionExpression(StatementExpression):
+class FunctionDefinitionExpression(StatementExpression):
     __slots__ = ["name", "parameters", "body", "closure"]
     name: str
     parameters: list[str]
@@ -834,7 +834,7 @@ class FunctiontDefinitionExpression(StatementExpression):
         self.body = expression_from_iter_till_end(next(token_iter), token_iter)
 
     def __str__(self) -> str:
-        return f"fun {self.name} ({', '.join(self.parameters)}) \n {self.body}"
+        return f"<fn {self.name}>"
     
     def evaluate(self, scope: 'ExecutionScope') -> Any:
         self.closure = scope.clone()
@@ -964,8 +964,8 @@ class FunctionCallExpression(Expression):
     
     def evaluate(self, scope: 'ExecutionScope') -> None:
         v = self.identifier.evaluate(scope)
-        assert isinstance(v, FunctiontDefinitionExpression)
-        funcdef = cast(FunctiontDefinitionExpression, v)
+        assert isinstance(v, FunctionDefinitionExpression)
+        funcdef = cast(FunctionDefinitionExpression, v)
         
         func_scope = scope.clone()
         for i in range(len(funcdef.parameters)):

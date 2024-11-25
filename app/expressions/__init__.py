@@ -36,7 +36,7 @@ __all__ = [
     ElseExpression.__name__,
     WhileExpression.__name__,
     AssignExpression.__name__,
-    FunctiontDefinitionExpression.__name__,
+    FunctionDefinitionExpression.__name__,
     FunctionCallExpression.__name__,
     
     AST.__name__,

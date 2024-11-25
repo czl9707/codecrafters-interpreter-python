@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Union, cast
 
-from ..expressions import FunctiontDefinitionExpression, define_built_in_function
+from ..expressions import FunctionDefinitionExpression, define_built_in_function
 from ..utils import UndefinedVariableError, RuntimeError
 
 
@@ -66,7 +66,7 @@ class ExecutionScope:
 
 class Variable:
     __slots__ = ["scope", "name", "value"]
-    value: Union[int, float, str, None, bool, 'FunctiontDefinitionExpression']
+    value: Union[int, float, str, None, bool, 'FunctionDefinitionExpression']
     def __init__(self, scope: ExecutionScope, name: str) -> None:
         self.scope = scope
         self.name = name

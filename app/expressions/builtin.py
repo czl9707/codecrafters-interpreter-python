@@ -2,12 +2,12 @@ import datetime
 from typing import Any, Iterator, Optional, Self, Type, TYPE_CHECKING, Callable
 
 from ..tokens.tokens import NilReservedWord, Token
-from .expressions import FunctiontDefinitionExpression, Expression
+from .expressions import FunctionDefinitionExpression, Expression
 
 if TYPE_CHECKING:
     from ..execution import ExecutionScope
 
-class BuiltInFunctionDefinitionExpression(FunctiontDefinitionExpression):
+class BuiltInFunctionDefinitionExpression(FunctionDefinitionExpression):
     name: str
     parameters: list[str]
     body: Expression
