@@ -36,11 +36,12 @@ class ExecutionScope:
         
         if self.parent is None:
             self._variables["clock"] = Variable(self, "clock")
-            self._variables["clock"].value = define_built_in_function(
+            self._variables["clock"].value = (define_built_in_function(
                 "clock", 
                 [], 
                 lambda: int(datetime.now().timestamp()), 
                 self
+            ),self
             )
     
     def create_variable(self, name: str) -> 'Variable':
