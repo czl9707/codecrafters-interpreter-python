@@ -64,10 +64,16 @@ class ExecutionScope:
         closure._variables = {**self._variables}
         return closure 
 
+    def __str__(self) -> str:
+        lines = []
+        lines.append("scope: " + super().__str__())
+        lines.append("variables:" + ",".join(f"{key}:{value.value}" for key, value in self._variables.items()))
+        lines.append("parent:" + str(self.parent).replace('\n', '\n  '))        
+        return "\n".join(lines)
 
 class Variable:
     __slots__ = ["scope", "name", "value"]
-    value: Union[int, float, str, None, bool, 'FunctionDefinitionExpression']
+    value: Union[int, float, str, None, bool, tuple['FunctionDefinitionExpression', ExecutionScope]]
     def __init__(self, scope: ExecutionScope, name: str) -> None:
         self.scope = scope
         self.name = name

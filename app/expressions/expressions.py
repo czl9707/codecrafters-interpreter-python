@@ -801,11 +801,10 @@ class ForExpression(StatementExpression):
 
 @yield_from(FunReservedWord)
 class FunctionDefinitionExpression(StatementExpression):
-    __slots__ = ["name", "parameters", "body", "closure"]
+    __slots__ = ["name", "parameters", "body"]
     name: str
     parameters: list[str]
     body: Expression
-    closure: 'ExecutionScope'
     
     def __init__(
         self, 
@@ -846,9 +845,8 @@ class FunctionDefinitionExpression(StatementExpression):
         return f"<fn {self.name}>"
     
     def evaluate(self, scope: 'ExecutionScope') -> Any:
-        self.closure = scope.clone()
         var = scope.create_variable(self.name)
-        var.value = self
+        var.value = (self, scope.create_child_scope())
 
 
 @yield_from(ReturnReservedWord)
@@ -954,7 +952,7 @@ class RootAST(AST):
 # *********************************************** Call ***********************************************
 class FunctionCallExpression(Expression):
     __slots__ = ["identifier", "call_parameters"]
-    identifier: IdentifierExpression
+    identifier: Union[IdentifierExpression, 'FunctionCallExpression']
     call_parameters : list[Expression]
     
     def __init__(
@@ -996,18 +994,18 @@ class FunctionCallExpression(Expression):
         return cls(token, prev_expr, token_iter)
                 
     def __str__(self) -> str:
-        return f"{self.identifier.name.lexeme} ({','.join(str(p) for p in self.call_parameters)})"
+        return f"{self.identifier} ({','.join(str(p) for p in self.call_parameters)})"
     
     def evaluate(self, scope: 'ExecutionScope') -> None:
         v = self.identifier.evaluate(scope)
-        assert isinstance(v, FunctionDefinitionExpression)
-        funcdef = cast(FunctionDefinitionExpression, v)
+        assert isinstance(v, tuple)
+        funcdef, closure = cast(tuple[FunctionDefinitionExpression, "ExecutionScope"], v)
         
-        func_scope = scope.clone()
+        func_scope = closure.clone()
         for i in range(len(funcdef.parameters)):
             var = func_scope.create_variable(funcdef.parameters[i])
             var.value = self.call_parameters[i].evaluate(scope)
-            
+        
         funcdef.body.evaluate(func_scope)
         return func_scope.function_return_value[1]
 
