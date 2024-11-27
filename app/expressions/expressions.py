@@ -1058,7 +1058,7 @@ class GroupFunctionCallExpressionRouter(Expression, ABC):
         if (
             isinstance(current_expr, IdentifierExpression) or 
             isinstance(current_expr, FunctionCallExpression) or
-            (isinstance(current_expr, LiteralExpression) and isinstance(current_expr, NilLiteralExpression))or
+            (isinstance(current_expr, LiteralExpression) and not isinstance(current_expr, NilLiteralExpression))or
             isinstance(current_expr, GroupExpression)
         ):
             if parent_expr:
