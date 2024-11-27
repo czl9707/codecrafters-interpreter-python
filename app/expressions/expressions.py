@@ -1056,7 +1056,12 @@ class GroupFunctionCallExpressionRouter(Expression, ABC):
             parent_expr = current_expr
             current_expr = current_expr.right
         
-        if isinstance(current_expr, IdentifierExpression) or isinstance(current_expr, FunctionCallExpression):
+        if (
+            isinstance(current_expr, IdentifierExpression) or 
+            isinstance(current_expr, FunctionCallExpression) or
+            isinstance(current_expr, LiteralExpression) or
+            isinstance(current_expr, GroupExpression)
+        ):
             if parent_expr:
                 parent_expr.right = FunctionCallExpression.from_token(token, current_expr, token_iter)
                 return prev_expr # type: ignore
