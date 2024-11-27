@@ -963,7 +963,6 @@ class FunctionCallExpression(Expression):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
-        assert isinstance(prev_expr, IdentifierExpression) or isinstance(prev_expr, FunctionCallExpression)
         assert isinstance(token, LeftParenthesisSymbol)
         
         self.identifier = prev_expr
