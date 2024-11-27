@@ -49,7 +49,7 @@ from ..utils import (
 
 if TYPE_CHECKING:
     from ..tokens import Token
-    from ..execution import ExecutionScope, Variable
+    from ..execution import ExecutionScope, Variable, FunctionScopeBinding
 
 
 def precedence(pre: int) -> Callable[[Type['Expression']], Type['Expression']]:
@@ -573,7 +573,7 @@ class AssignExpression(BinaryExpression):
         right_v = self.right.evaluate(scope)
         
         var = left_expr.left_value_evaluate(scope)
-        var.value = right_v
+        var.set_value(right_v)
         
         return right_v
 
@@ -640,7 +640,7 @@ class VarExpression(StatementExpression):
         if self.assignment:
             value = self.assignment.right.evaluate(scope)
         variable = scope.create_variable(self.identifier.name.lexeme)
-        variable.value = value
+        variable.set_value(value)
         
         return variable.value
     
@@ -846,7 +846,7 @@ class FunctionDefinitionExpression(StatementExpression):
     
     def evaluate(self, scope: 'ExecutionScope') -> Any:
         var = scope.create_variable(self.name)
-        var.value = (self, scope.create_child_scope())
+        var.set_function_value(self, scope.create_child_scope())
 
 
 @yield_from(ReturnReservedWord)
@@ -997,14 +997,14 @@ class FunctionCallExpression(Expression):
         return f"{self.identifier} ({','.join(str(p) for p in self.call_parameters)})"
     
     def evaluate(self, scope: 'ExecutionScope') -> None:
-        v = self.identifier.evaluate(scope)
-        assert isinstance(v, tuple)
-        funcdef, closure = cast(tuple[FunctionDefinitionExpression, "ExecutionScope"], v)
+        v:'FunctionScopeBinding' = self.identifier.evaluate(scope)  # type: ignore
+        assert v.__class__.__name__ == 'FunctionScopeBinding'
+        funcdef, closure = v.funcdef, v.closure
         
         func_scope = closure.clone()
         for i in range(len(funcdef.parameters)):
             var = func_scope.create_variable(funcdef.parameters[i])
-            var.value = self.call_parameters[i].evaluate(scope)
+            var.set_value(self.call_parameters[i].evaluate(scope))
         
         funcdef.body.evaluate(func_scope)
         return func_scope.function_return_value[1]

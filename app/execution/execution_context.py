@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Any, Optional, Union, cast
+from xmlrpc.client import boolean
 
 from ..expressions import FunctionDefinitionExpression, define_built_in_function
 from ..utils import UndefinedVariableError, RuntimeError
@@ -36,13 +37,14 @@ class ExecutionScope:
         
         if self.parent is None:
             self._variables["clock"] = Variable(self, "clock")
-            self._variables["clock"].value = (define_built_in_function(
-                "clock", 
-                [], 
-                lambda: int(datetime.now().timestamp()), 
-                self
-            ),self
-            )
+            self._variables["clock"]._value = FunctionScopeBinding(
+                define_built_in_function(
+                    "clock", 
+                    [], 
+                    lambda: int(datetime.now().timestamp()), 
+                    self
+                ),
+                self)
     
     def create_variable(self, name: str) -> 'Variable':
         self._variables[name] = Variable(self, name)
@@ -73,12 +75,25 @@ class ExecutionScope:
         return "\n".join(lines)
 
 class Variable:
-    __slots__ = ["scope", "name", "value"]
-    value: Union[int, float, str, None, bool, tuple['FunctionDefinitionExpression', ExecutionScope]]
+    __slots__ = ["scope", "name", "_value"]
+    _value: Union[int, float, str, None, bool, 'FunctionScopeBinding']
     def __init__(self, scope: ExecutionScope, name: str) -> None:
         self.scope = scope
         self.name = name
-        self.value = None
+        self._value = None
+    
+    @property
+    def value(self) -> Union[int, float, str, None, bool, 'FunctionScopeBinding']:
+        return self._value
+    
+    def set_value(self, value: Union[int, float, str, None, bool]) -> None :
+        self._value = value
+    
+    def set_function_value(self, funcdef: 'FunctionDefinitionExpression', closure: ExecutionScope):
+        self._value = FunctionScopeBinding(funcdef, closure)
+    
+    def is_function(self) -> boolean:
+        return isinstance(self._value, FunctionScopeBinding)
     
     def __hash__(self) -> int:
         return self.name.__hash__()
@@ -91,5 +106,15 @@ class Variable:
     
     def __str__(self) -> str:
         return f"{self.name}: {self.value}"
+    
+
+class FunctionScopeBinding:
+    __slots__ = ["funcdef", "closure"]
+    def __init__(self, funcdef: 'FunctionDefinitionExpression', closure: ExecutionScope) -> None:
+        self.funcdef = funcdef
+        self.closure = closure
+    
+    def __str__(self) -> str:
+        return str(self.funcdef)
     
     
