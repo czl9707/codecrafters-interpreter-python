@@ -8,4 +8,6 @@ __all__=[
     UndefinedVariableError.__name__,
     MissingScopeExpressionError.__name__,
     FunctionScopeExpressionError, __name__,
+    NotCallableError.__name__,
+    ArgumentsNotMatchError.__name__,
 ]

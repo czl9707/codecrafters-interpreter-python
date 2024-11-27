@@ -65,3 +65,13 @@ class UndefinedVariableError(RuntimeError):
     def __init__(self, name: str) -> None:
         super().__init__()
         self.msg = f"Undefined variable '{name}'."
+
+class NotCallableError(RuntimeError):
+    msg = "Can only call functions and classes."
+    def __init__(self) -> None:
+        super().__init__()
+
+class ArgumentsNotMatchError(RuntimeError):
+    def __init__(self, expected: int, got: int) -> None:
+        super().__init__()
+        self.msg = f"Expected {expected} arguments but got {got}."

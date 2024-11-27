@@ -43,8 +43,10 @@ from ..utils import (
     MissingScopeExpressionError, 
     MissingExpressionError, 
     NoneNumberOperandError, 
-    UnMatchedOprendError, 
+    UnMatchedOprendError,
+    NotCallableError, 
     RuntimeError,
+    ArgumentsNotMatchError,
 )
 
 if TYPE_CHECKING:
@@ -998,8 +1000,12 @@ class FunctionCallExpression(Expression):
     
     def evaluate(self, scope: 'ExecutionScope') -> None:
         v:'FunctionScopeBinding' = self.identifier.evaluate(scope)  # type: ignore
-        assert v.__class__.__name__ == 'FunctionScopeBinding'
+        if v.__class__.__name__ != 'FunctionScopeBinding':
+            raise NotCallableError()
         funcdef, closure = v.funcdef, v.closure
+        
+        if len(funcdef.parameters) != len(self.call_parameters):
+            raise ArgumentsNotMatchError(len(funcdef.parameters), len(self.call_parameters))
         
         func_scope = closure.clone()
         for i in range(len(funcdef.parameters)):
