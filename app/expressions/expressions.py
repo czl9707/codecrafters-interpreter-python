@@ -954,7 +954,7 @@ class RootAST(AST):
 # *********************************************** Call ***********************************************
 class FunctionCallExpression(Expression):
     __slots__ = ["identifier", "call_parameters"]
-    identifier: Union[IdentifierExpression, 'FunctionCallExpression']
+    identifier: Optional['Expression']
     call_parameters : list[Expression]
     
     def __init__(
@@ -1058,7 +1058,7 @@ class GroupFunctionCallExpressionRouter(Expression, ABC):
         if (
             isinstance(current_expr, IdentifierExpression) or 
             isinstance(current_expr, FunctionCallExpression) or
-            isinstance(current_expr, LiteralExpression) or
+            (isinstance(current_expr, LiteralExpression) and isinstance(current_expr, NilLiteralExpression))or
             isinstance(current_expr, GroupExpression)
         ):
             if parent_expr:
