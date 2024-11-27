@@ -694,12 +694,12 @@ class ElseExpression(StatementExpression):
         prev_expr: Optional['Expression'], 
         token_iter: Iterator['Token']
     ) -> None:
-        assert (
-            isinstance(prev_expr, IfExpression) or (
-                isinstance(prev_expr, ElseExpression) and
-                isinstance(prev_expr.expression, IfExpression)
-            )
-        )
+        # assert (
+        #     isinstance(prev_expr, IfExpression) or (
+        #         isinstance(prev_expr, ElseExpression) and
+        #         isinstance(prev_expr.expression, IfExpression)
+        #     )
+        # )
         assert isinstance(token, ElseReservedWord)    
         
         token = next(token_iter)
@@ -890,14 +890,13 @@ class AST(Expression):
     ) -> None:
         self.children = []
         
-        expression: Expression = NIL
         assert isinstance(token, LeftBraceSymbol)
         token = next(token_iter)
         while token:
             if isinstance(token, RightBraceSymbol):
                 return
             
-            expression = expression_from_iter_till_end(token, token_iter, expression)
+            expression = expression_from_iter_till_end(token, token_iter)
             self.children.append(expression)
             token = next(token_iter)
         
@@ -938,13 +937,12 @@ class RootAST(AST):
     ) -> None:
         self.children = []
         
-        expression: Expression = NIL
         token = next(token_iter)
         while token:
             if isinstance(token, EOFSymbol):
                 return
             
-            expression = expression_from_iter_till_end(token, token_iter, expression)
+            expression = expression_from_iter_till_end(token, token_iter)
             self.children.append(expression)
             token = next(token_iter)
         
